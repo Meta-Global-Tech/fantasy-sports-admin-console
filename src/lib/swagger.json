@@ -1,0 +1,4431 @@
+{
+  "openapi": "3.0.0",
+  "components": {
+    "examples": {},
+    "headers": {},
+    "parameters": {},
+    "requestBodies": {},
+    "responses": {},
+    "schemas": {
+      "Money": {
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          }
+        },
+        "required": ["amount", "currency"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "WiseQuote": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "sourceCurrency": {
+            "type": "string"
+          },
+          "targetCurrency": {
+            "type": "string"
+          },
+          "sourceAmount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "targetAmount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "rate": {
+            "type": "number",
+            "format": "double"
+          },
+          "rateExpirationTime": {
+            "type": "string"
+          },
+          "fee": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "totalPayable": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "estimatedDeliveryTime": {
+            "type": "string"
+          },
+          "payInMethod": {
+            "type": "string"
+          },
+          "payOutMethod": {
+            "type": "string"
+          },
+          "recipientId": {
+            "type": "string"
+          },
+          "notices": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "expiresAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "sourceCurrency",
+          "targetCurrency",
+          "sourceAmount",
+          "targetAmount",
+          "rate",
+          "rateExpirationTime",
+          "fee",
+          "totalPayable",
+          "estimatedDeliveryTime",
+          "payInMethod",
+          "payOutMethod",
+          "notices",
+          "expiresAt"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "CreateQuoteRequest": {
+        "properties": {
+          "targetAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "targetCurrency": {
+            "type": "string"
+          },
+          "bankAccountId": {
+            "type": "string"
+          }
+        },
+        "required": ["targetAmount", "targetCurrency"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "WithdrawalAccountsResponse": {
+        "properties": {
+          "wiseEmail": {
+            "type": "string",
+            "description": "Wise account email address for withdrawals"
+          },
+          "binanceEmail": {
+            "type": "string",
+            "description": "Binance account email address for withdrawals"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "UpdateWithdrawalAccountsRequest": {
+        "properties": {
+          "wiseEmail": {
+            "type": "string",
+            "description": "Wise account email address"
+          },
+          "binanceEmail": {
+            "type": "string",
+            "description": "Binance account email address"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "WithdrawalMethod": {
+        "type": "string",
+        "enum": ["wise", "binance"],
+        "description": "Supported withdrawal methods"
+      },
+      "SubmitWithdrawalResponse": {
+        "properties": {
+          "transactionId": {
+            "type": "string",
+            "description": "Unique transaction ID for tracking"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double",
+            "description": "Amount deducted from the wallet"
+          },
+          "method": {
+            "$ref": "#/components/schemas/WithdrawalMethod",
+            "description": "Withdrawal method chosen"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["SUBMITTED"],
+            "nullable": false,
+            "description": "Transaction status – always SUBMITTED on creation"
+          }
+        },
+        "required": ["transactionId", "amount", "method", "status"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "SubmitWithdrawalRequest": {
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "double",
+            "description": "Amount to withdraw (in the wallet's currency)"
+          },
+          "method": {
+            "$ref": "#/components/schemas/WithdrawalMethod",
+            "description": "Withdrawal method"
+          },
+          "accountId": {
+            "type": "string",
+            "description": "Account ID for the withdrawal email for wise and binance"
+          }
+        },
+        "required": ["amount", "method", "accountId"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "Currency": {
+        "enum": ["USD", "CRYPTO"],
+        "type": "string"
+      },
+      "Wallet": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "balance": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          }
+        },
+        "required": ["id", "balance", "currency"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "TransactionStatus": {
+        "enum": ["SUBMITTED", "PROCESSED", "FAILED"],
+        "type": "string"
+      },
+      "Transaction": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TransactionStatus"
+          },
+          "fromWalletId": {
+            "type": "string"
+          },
+          "fromDescription": {
+            "type": "string"
+          },
+          "toWalletId": {
+            "type": "string"
+          },
+          "toDescription": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ammount": {
+            "type": "number",
+            "format": "double"
+          },
+          "withdrawalToBeProcessed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "status",
+          "fromWalletId",
+          "fromDescription",
+          "toWalletId",
+          "toDescription",
+          "updatedAt",
+          "ammount",
+          "withdrawalToBeProcessed"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "PaginatedTransactionbcf5": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Transaction"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number",
+                "format": "double"
+              }
+            ]
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        },
+        "required": ["items", "hasMore"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "WalletWithTransactions": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "balance": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "transactions": {
+            "$ref": "#/components/schemas/PaginatedTransactionbcf5"
+          }
+        },
+        "required": ["id", "balance", "currency", "transactions"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "StripeConfigResponse": {
+        "properties": {
+          "publishableKey": {
+            "type": "string"
+          }
+        },
+        "required": ["publishableKey"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "PaymentIntentResponse": {
+        "properties": {
+          "clientSecret": {
+            "type": "string",
+            "nullable": true
+          },
+          "customer": {
+            "type": "string"
+          },
+          "ephemeralKey": {
+            "type": "string"
+          }
+        },
+        "required": ["clientSecret"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "PaymentIntentRequest": {
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "metadata": {
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "contestId": {
+                "type": "string"
+              },
+              "matchId": {
+                "type": "string"
+              },
+              "dreamTeamId": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "required": ["amount"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "CheckoutSessionResponse": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": ["url"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "CheckoutSessionRequest": {
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "metadata": {
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "contestId": {
+                "type": "string"
+              },
+              "matchId": {
+                "type": "string"
+              },
+              "dreamTeamId": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "successUrl": {
+            "type": "string"
+          },
+          "cancelUrl": {
+            "type": "string"
+          }
+        },
+        "required": ["amount"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ContestStatus": {
+        "enum": [
+          "PREMATCH",
+          "FILLED",
+          "INMATCH",
+          "MATCHENDED",
+          "TOSETTLE",
+          "SETTLED",
+          "TOREFUND",
+          "REFUNDED"
+        ],
+        "type": "string"
+      },
+      "LeaderBoardItem": {
+        "properties": {
+          "rowNumber": {
+            "type": "number",
+            "format": "double"
+          },
+          "rank": {
+            "type": "number",
+            "format": "double"
+          },
+          "dreamTeamId": {
+            "type": "string"
+          },
+          "authorId": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "dreamTeamName": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "required": ["rowNumber", "rank", "dreamTeamId", "authorId", "score"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "RecordLeaderBoardItema4eb": {
+        "properties": {},
+        "additionalProperties": {
+          "$ref": "#/components/schemas/LeaderBoardItem"
+        },
+        "type": "object",
+        "description": "Construct a type with a set of properties K of type T"
+      },
+      "ContestType": {
+        "enum": [
+          "POOL500",
+          "POOL100",
+          "POOL50",
+          "POOL25",
+          "POOL10",
+          "POOL3",
+          "HEADTOHEAD",
+          "PRACTICE"
+        ],
+        "type": "string"
+      },
+      "PriceSheetItem": {
+        "properties": {
+          "rowNumber": {
+            "type": "number",
+            "format": "double"
+          },
+          "rankTo": {
+            "type": "number",
+            "format": "double"
+          },
+          "rankFrom": {
+            "type": "number",
+            "format": "double"
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "rowNumber",
+          "rankTo",
+          "rankFrom",
+          "price",
+          "currency",
+          "description"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "RecordPriceSheetItem9d7f": {
+        "properties": {},
+        "additionalProperties": {
+          "$ref": "#/components/schemas/PriceSheetItem"
+        },
+        "type": "object",
+        "description": "Construct a type with a set of properties K of type T"
+      },
+      "ContestTeamFormationRuleType": {
+        "enum": [
+          "NO_OF_PLAYERS",
+          "CREDITS_GIVEN",
+          "MAX_FROM_ONE_TEAM",
+          "WK_MIN",
+          "WK_MAX",
+          "BT_MIN",
+          "BT_MAX",
+          "AR_MIN",
+          "AR_MAX",
+          "BOWL_MIN",
+          "BOWL_MAX"
+        ],
+        "type": "string"
+      },
+      "TeamFormationRuleItem": {
+        "properties": {
+          "rowNumber": {
+            "type": "number",
+            "format": "double"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ContestTeamFormationRuleType"
+          },
+          "valueInt": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "required": ["rowNumber", "type", "valueInt"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "RecordContestTeamFormationcffb": {
+        "properties": {
+          "NO_OF_PLAYERS": {
+            "$ref": "#/components/schemas/TeamFormationRuleItem"
+          },
+          "CREDITS_GIVEN": {
+            "$ref": "#/components/schemas/TeamFormationRuleItem"
+          },
+          "MAX_FROM_ONE_TEAM": {
+            "$ref": "#/components/schemas/TeamFormationRuleItem"
+          },
+          "WK_MIN": {
+            "$ref": "#/components/schemas/TeamFormationRuleItem"
+          },
+          "WK_MAX": {
+            "$ref": "#/components/schemas/TeamFormationRuleItem"
+          },
+          "BT_MIN": {
+            "$ref": "#/components/schemas/TeamFormationRuleItem"
+          },
+          "BT_MAX": {
+            "$ref": "#/components/schemas/TeamFormationRuleItem"
+          },
+          "AR_MIN": {
+            "$ref": "#/components/schemas/TeamFormationRuleItem"
+          },
+          "AR_MAX": {
+            "$ref": "#/components/schemas/TeamFormationRuleItem"
+          },
+          "BOWL_MIN": {
+            "$ref": "#/components/schemas/TeamFormationRuleItem"
+          },
+          "BOWL_MAX": {
+            "$ref": "#/components/schemas/TeamFormationRuleItem"
+          }
+        },
+        "required": [
+          "NO_OF_PLAYERS",
+          "CREDITS_GIVEN",
+          "MAX_FROM_ONE_TEAM",
+          "WK_MIN",
+          "WK_MAX",
+          "BT_MIN",
+          "BT_MAX",
+          "AR_MIN",
+          "AR_MAX",
+          "BOWL_MIN",
+          "BOWL_MAX"
+        ],
+        "type": "object",
+        "description": "Construct a type with a set of properties K of type T"
+      },
+      "ScoreCardItemType": {
+        "enum": [
+          "RUNS",
+          "FOURS",
+          "SIXES",
+          "WICKETS",
+          "CATCHES",
+          "RUN_OUTS",
+          "RUN_OUT_DIRECT",
+          "RUN_OUT_INDIRECT",
+          "STUMPINGS",
+          "BALLS_FACED",
+          "BATTING_STRIKE_RATE",
+          "DISMISSAL",
+          "DISMISSAL_BOWLER",
+          "DISMISSAL_CATCHER",
+          "OVERS_BOWLED",
+          "MAIDEN_OVERS",
+          "BOWLING_ECONOMY",
+          "RUNS_CONCEDED",
+          "WIDES",
+          "NO_BALLS",
+          "LEG_BUYS",
+          "LINEUP_ANNOUNCED",
+          "IS_SUBSTITUTE",
+          "IS_MAN_OF_THE_MATCH"
+        ],
+        "type": "string"
+      },
+      "ScoreMultiplerItem": {
+        "properties": {
+          "rowNumber": {
+            "type": "number",
+            "format": "double"
+          },
+          "scoreCardItemType": {
+            "$ref": "#/components/schemas/ScoreCardItemType"
+          },
+          "valueInt": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "required": ["rowNumber", "scoreCardItemType", "valueInt"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "RecordScoreCardItemTypeSco24cd": {
+        "properties": {
+          "RUNS": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "FOURS": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "SIXES": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "WICKETS": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "CATCHES": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "RUN_OUTS": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "RUN_OUT_DIRECT": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "RUN_OUT_INDIRECT": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "STUMPINGS": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "BALLS_FACED": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "BATTING_STRIKE_RATE": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "DISMISSAL": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "DISMISSAL_BOWLER": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "DISMISSAL_CATCHER": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "OVERS_BOWLED": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "MAIDEN_OVERS": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "BOWLING_ECONOMY": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "RUNS_CONCEDED": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "WIDES": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "NO_BALLS": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "LEG_BUYS": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "LINEUP_ANNOUNCED": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "IS_SUBSTITUTE": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "IS_MAN_OF_THE_MATCH": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
+          }
+        },
+        "required": [
+          "RUNS",
+          "FOURS",
+          "SIXES",
+          "WICKETS",
+          "CATCHES",
+          "RUN_OUTS",
+          "RUN_OUT_DIRECT",
+          "RUN_OUT_INDIRECT",
+          "STUMPINGS",
+          "BALLS_FACED",
+          "BATTING_STRIKE_RATE",
+          "DISMISSAL",
+          "DISMISSAL_BOWLER",
+          "DISMISSAL_CATCHER",
+          "OVERS_BOWLED",
+          "MAIDEN_OVERS",
+          "BOWLING_ECONOMY",
+          "RUNS_CONCEDED",
+          "WIDES",
+          "NO_BALLS",
+          "LEG_BUYS",
+          "LINEUP_ANNOUNCED",
+          "IS_SUBSTITUTE",
+          "IS_MAN_OF_THE_MATCH"
+        ],
+        "type": "object",
+        "description": "Construct a type with a set of properties K of type T"
+      },
+      "Contest": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/ContestType"
+          },
+          "matchId": {
+            "type": "string"
+          },
+          "entryPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "description": {
+            "type": "string"
+          },
+          "teamsTotalLimit": {
+            "type": "number",
+            "format": "double"
+          },
+          "teamsPerUserLimit": {
+            "type": "number",
+            "format": "double"
+          },
+          "priceSheet": {
+            "$ref": "#/components/schemas/RecordPriceSheetItem9d7f"
+          },
+          "teamFormationRules": {
+            "$ref": "#/components/schemas/RecordContestTeamFormationcffb"
+          },
+          "scoreMultiplerSheet": {
+            "$ref": "#/components/schemas/RecordScoreCardItemTypeSco24cd"
+          },
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ContestStatus"
+          },
+          "entryPriceCurrency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "walletId": {
+            "type": "string"
+          },
+          "leaderBoard": {
+            "$ref": "#/components/schemas/RecordLeaderBoardItema4eb"
+          },
+          "createdAt": {
+            "type": "number",
+            "format": "double"
+          },
+          "submittedDreamTeamCount": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "required": [
+          "type",
+          "matchId",
+          "entryPrice",
+          "description",
+          "teamsTotalLimit",
+          "teamsPerUserLimit",
+          "priceSheet",
+          "teamFormationRules",
+          "scoreMultiplerSheet",
+          "id",
+          "status",
+          "entryPriceCurrency",
+          "walletId",
+          "leaderBoard",
+          "createdAt",
+          "submittedDreamTeamCount"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "PlayerSecondRole": {
+        "enum": ["BOWLER", "BATTER", "WICKETKEEPER", "ALLROUNDER"],
+        "type": "string"
+      },
+      "PlayerRole": {
+        "enum": ["CAPTAIN", "VICECAPTAIN", "MEMBER"],
+        "type": "string"
+      },
+      "ScoreCardItemValueType": {
+        "enum": ["INT", "FLOAT", "STRING"],
+        "type": "string"
+      },
+      "ScoreCardItem": {
+        "properties": {
+          "scoreCardItemType": {
+            "$ref": "#/components/schemas/ScoreCardItemType"
+          },
+          "valueType": {
+            "$ref": "#/components/schemas/ScoreCardItemValueType"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number",
+                "format": "double"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": ["scoreCardItemType", "valueType", "value"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "RecordScoreCardItemTypeSco0b68": {
+        "properties": {
+          "RUNS": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "FOURS": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "SIXES": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "WICKETS": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "CATCHES": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "RUN_OUTS": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "RUN_OUT_DIRECT": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "RUN_OUT_INDIRECT": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "STUMPINGS": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "BALLS_FACED": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "BATTING_STRIKE_RATE": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "DISMISSAL": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "DISMISSAL_BOWLER": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "DISMISSAL_CATCHER": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "OVERS_BOWLED": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "MAIDEN_OVERS": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "BOWLING_ECONOMY": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "RUNS_CONCEDED": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "WIDES": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "NO_BALLS": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "LEG_BUYS": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "LINEUP_ANNOUNCED": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "IS_SUBSTITUTE": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "IS_MAN_OF_THE_MATCH": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          }
+        },
+        "required": [
+          "RUNS",
+          "FOURS",
+          "SIXES",
+          "WICKETS",
+          "CATCHES",
+          "RUN_OUTS",
+          "RUN_OUT_DIRECT",
+          "RUN_OUT_INDIRECT",
+          "STUMPINGS",
+          "BALLS_FACED",
+          "BATTING_STRIKE_RATE",
+          "DISMISSAL",
+          "DISMISSAL_BOWLER",
+          "DISMISSAL_CATCHER",
+          "OVERS_BOWLED",
+          "MAIDEN_OVERS",
+          "BOWLING_ECONOMY",
+          "RUNS_CONCEDED",
+          "WIDES",
+          "NO_BALLS",
+          "LEG_BUYS",
+          "LINEUP_ANNOUNCED",
+          "IS_SUBSTITUTE",
+          "IS_MAN_OF_THE_MATCH"
+        ],
+        "type": "object",
+        "description": "Construct a type with a set of properties K of type T"
+      },
+      "ScoreCardInning": {
+        "properties": {
+          "inning": {
+            "type": "number",
+            "format": "double"
+          },
+          "items": {
+            "$ref": "#/components/schemas/RecordScoreCardItemTypeSco0b68"
+          }
+        },
+        "required": ["inning", "items"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "RecordScoreCardInninga23a": {
+        "properties": {},
+        "additionalProperties": {
+          "$ref": "#/components/schemas/ScoreCardInning"
+        },
+        "type": "object",
+        "description": "Construct a type with a set of properties K of type T"
+      },
+      "RealTeamPlayer": {
+        "properties": {
+          "matchId": {
+            "type": "string"
+          },
+          "realTeamId": {
+            "type": "string"
+          },
+          "playerProfileId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "playerSecondRole": {
+            "$ref": "#/components/schemas/PlayerSecondRole"
+          },
+          "playerRole": {
+            "$ref": "#/components/schemas/PlayerRole"
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "scoreCard": {
+            "$ref": "#/components/schemas/RecordScoreCardInninga23a"
+          },
+          "espnId": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "matchId",
+          "realTeamId",
+          "playerProfileId",
+          "name",
+          "playerSecondRole",
+          "playerRole",
+          "price",
+          "scoreCard"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "InningScore": {
+        "properties": {
+          "inning": {
+            "type": "number",
+            "format": "double"
+          },
+          "runs": {
+            "type": "number",
+            "format": "double"
+          },
+          "wickets": {
+            "type": "number",
+            "format": "double"
+          },
+          "overs": {
+            "type": "number",
+            "format": "double"
+          },
+          "extras": {
+            "properties": {
+              "total": {
+                "type": "number",
+                "format": "double"
+              },
+              "penalty": {
+                "type": "number",
+                "format": "double"
+              },
+              "byes": {
+                "type": "number",
+                "format": "double"
+              },
+              "legBuys": {
+                "type": "number",
+                "format": "double"
+              },
+              "noBalls": {
+                "type": "number",
+                "format": "double"
+              },
+              "wides": {
+                "type": "number",
+                "format": "double"
+              }
+            },
+            "required": [
+              "total",
+              "penalty",
+              "byes",
+              "legBuys",
+              "noBalls",
+              "wides"
+            ],
+            "type": "object"
+          }
+        },
+        "required": ["inning", "runs", "wickets", "overs"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "RecordInningScorea4ad": {
+        "properties": {},
+        "additionalProperties": {
+          "$ref": "#/components/schemas/InningScore"
+        },
+        "type": "object",
+        "description": "Construct a type with a set of properties K of type T"
+      },
+      "RealTeamWithRealTeamPlayers": {
+        "properties": {
+          "matchId": {
+            "type": "string"
+          },
+          "realTeamId": {
+            "type": "string"
+          },
+          "teamName": {
+            "type": "string"
+          },
+          "shortName": {
+            "type": "string"
+          },
+          "logoURL": {
+            "type": "string"
+          },
+          "scoreCard": {
+            "$ref": "#/components/schemas/RecordInningScorea4ad"
+          },
+          "players": {
+            "items": {
+              "$ref": "#/components/schemas/RealTeamPlayer"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["matchId", "realTeamId", "teamName", "logoURL", "players"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "MatchType": {
+        "enum": ["CRICKET"],
+        "type": "string"
+      },
+      "MatchStatus": {
+        "enum": [
+          "SETTINGUP",
+          "PREMATCH",
+          "TOSTART",
+          "LINEUPANNOUNCED",
+          "INMATCH",
+          "MATCHENDED",
+          "FINALIZED"
+        ],
+        "type": "string"
+      },
+      "MatchSourcePlatform": {
+        "enum": ["ESPN_CRICINFO"],
+        "type": "string"
+      },
+      "MatchSource": {
+        "properties": {
+          "matchId": {
+            "type": "string"
+          },
+          "platform": {
+            "$ref": "#/components/schemas/MatchSourcePlatform"
+          },
+          "liveScoreUrl": {
+            "type": "string"
+          },
+          "scoreCardUrl": {
+            "type": "string"
+          },
+          "matchPageUrl": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "required": ["matchId", "platform", "createdAt"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "RecordMatchSource2889": {
+        "properties": {},
+        "additionalProperties": {
+          "$ref": "#/components/schemas/MatchSource"
+        },
+        "type": "object",
+        "description": "Construct a type with a set of properties K of type T"
+      },
+      "MatchWithRealTeamsAndContests": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MatchType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MatchStatus"
+          },
+          "name": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "subType": {
+            "type": "string"
+          },
+          "innings": {
+            "type": "number",
+            "format": "double"
+          },
+          "currentInnings": {
+            "type": "number",
+            "format": "double"
+          },
+          "matchConclusion": {
+            "type": "string"
+          },
+          "series": {
+            "type": "string"
+          },
+          "inningScores": {
+            "items": {
+              "$ref": "#/components/schemas/InningScore"
+            },
+            "type": "array"
+          },
+          "createdAtEpoch": {
+            "type": "number",
+            "format": "double"
+          },
+          "matchSource": {
+            "$ref": "#/components/schemas/RecordMatchSource2889"
+          },
+          "contestCount": {
+            "type": "number",
+            "format": "double"
+          },
+          "prizePool": {
+            "type": "number",
+            "format": "double"
+          },
+          "teams": {
+            "items": {
+              "$ref": "#/components/schemas/RealTeamWithRealTeamPlayers"
+            },
+            "type": "array"
+          },
+          "contests": {
+            "items": {
+              "$ref": "#/components/schemas/Contest"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "startTime",
+          "type",
+          "status",
+          "name",
+          "matchSource",
+          "contestCount",
+          "prizePool",
+          "teams",
+          "contests"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "MatchesNewResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MatchWithRealTeamsAndContests"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number",
+                "format": "double"
+              }
+            ]
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        },
+        "required": ["items", "hasMore"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "MatchWithRealTeams": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MatchType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MatchStatus"
+          },
+          "name": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "subType": {
+            "type": "string"
+          },
+          "innings": {
+            "type": "number",
+            "format": "double"
+          },
+          "currentInnings": {
+            "type": "number",
+            "format": "double"
+          },
+          "matchConclusion": {
+            "type": "string"
+          },
+          "series": {
+            "type": "string"
+          },
+          "inningScores": {
+            "items": {
+              "$ref": "#/components/schemas/InningScore"
+            },
+            "type": "array"
+          },
+          "createdAtEpoch": {
+            "type": "number",
+            "format": "double"
+          },
+          "matchSource": {
+            "$ref": "#/components/schemas/RecordMatchSource2889"
+          },
+          "contestCount": {
+            "type": "number",
+            "format": "double"
+          },
+          "prizePool": {
+            "type": "number",
+            "format": "double"
+          },
+          "teams": {
+            "items": {
+              "$ref": "#/components/schemas/RealTeamWithRealTeamPlayers"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "startTime",
+          "type",
+          "status",
+          "name",
+          "matchSource",
+          "contestCount",
+          "prizePool",
+          "teams"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "MatchesScoreResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MatchWithRealTeams"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number",
+                "format": "double"
+              }
+            ]
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        },
+        "required": ["items", "hasMore"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "MatchScoreResponse": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MatchType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MatchStatus"
+          },
+          "name": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "subType": {
+            "type": "string"
+          },
+          "innings": {
+            "type": "number",
+            "format": "double"
+          },
+          "currentInnings": {
+            "type": "number",
+            "format": "double"
+          },
+          "matchConclusion": {
+            "type": "string"
+          },
+          "series": {
+            "type": "string"
+          },
+          "inningScores": {
+            "items": {
+              "$ref": "#/components/schemas/InningScore"
+            },
+            "type": "array"
+          },
+          "createdAtEpoch": {
+            "type": "number",
+            "format": "double"
+          },
+          "matchSource": {
+            "$ref": "#/components/schemas/RecordMatchSource2889"
+          },
+          "contestCount": {
+            "type": "number",
+            "format": "double"
+          },
+          "prizePool": {
+            "type": "number",
+            "format": "double"
+          },
+          "teams": {
+            "items": {
+              "$ref": "#/components/schemas/RealTeamWithRealTeamPlayers"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "startTime",
+          "type",
+          "status",
+          "name",
+          "matchSource",
+          "contestCount",
+          "prizePool",
+          "teams"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "Recordstringnumber9715": {
+        "properties": {},
+        "additionalProperties": {
+          "type": "number",
+          "format": "double"
+        },
+        "type": "object",
+        "description": "Construct a type with a set of properties K of type T"
+      },
+      "Recordstringnumberorstring0c62": {
+        "properties": {},
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number",
+              "format": "double"
+            }
+          ]
+        },
+        "type": "object",
+        "description": "Construct a type with a set of properties K of type T"
+      },
+      "DreamTeamPlayerScoreCard": {
+        "properties": {
+          "totalScore": {
+            "type": "number",
+            "format": "double"
+          },
+          "breakdown": {
+            "$ref": "#/components/schemas/Recordstringnumber9715"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/Recordstringnumberorstring0c62"
+          }
+        },
+        "required": ["totalScore", "breakdown", "stats"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "DreamTeamPlayer": {
+        "properties": {
+          "matchId": {
+            "type": "string"
+          },
+          "contestId": {
+            "type": "string"
+          },
+          "realTeamId": {
+            "type": "string"
+          },
+          "ownerId": {
+            "type": "string"
+          },
+          "dreamTeamId": {
+            "type": "string"
+          },
+          "playerProfileId": {
+            "type": "string"
+          },
+          "playerRole": {
+            "$ref": "#/components/schemas/PlayerRole"
+          },
+          "playerSecondRole": {
+            "$ref": "#/components/schemas/PlayerSecondRole"
+          },
+          "score": {
+            "type": "number",
+            "format": "double"
+          },
+          "scoreCard": {
+            "$ref": "#/components/schemas/DreamTeamPlayerScoreCard"
+          },
+          "imageUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "matchId",
+          "contestId",
+          "realTeamId",
+          "ownerId",
+          "dreamTeamId",
+          "playerProfileId",
+          "playerRole",
+          "playerSecondRole",
+          "score"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "DreamTeamStatus": {
+        "enum": ["DRAFT", "SUBMITTED", "LOCKED"],
+        "type": "string"
+      },
+      "DreamTeamSubStatus": {
+        "enum": ["PICKINGTEAM", "PAYING", "PAYED"],
+        "type": "string"
+      },
+      "DreamTeam": {
+        "properties": {
+          "matchId": {
+            "type": "string"
+          },
+          "contestId": {
+            "type": "string"
+          },
+          "ownerId": {
+            "type": "string"
+          },
+          "dreamTeamId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DreamTeamStatus"
+          },
+          "subStatus": {
+            "$ref": "#/components/schemas/DreamTeamSubStatus"
+          },
+          "createdAt": {
+            "type": "number",
+            "format": "double"
+          },
+          "submittedAt": {
+            "type": "number",
+            "format": "double"
+          },
+          "score": {
+            "type": "number",
+            "format": "double"
+          },
+          "rank": {
+            "type": "number",
+            "format": "double"
+          },
+          "dreamTeamPlayers": {
+            "items": {
+              "$ref": "#/components/schemas/DreamTeamPlayer"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "matchId",
+          "contestId",
+          "ownerId",
+          "dreamTeamId",
+          "name",
+          "status",
+          "subStatus",
+          "createdAt",
+          "dreamTeamPlayers"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ContestWithUserDreamTeams": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/ContestType"
+          },
+          "matchId": {
+            "type": "string"
+          },
+          "entryPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "description": {
+            "type": "string"
+          },
+          "teamsTotalLimit": {
+            "type": "number",
+            "format": "double"
+          },
+          "teamsPerUserLimit": {
+            "type": "number",
+            "format": "double"
+          },
+          "priceSheet": {
+            "$ref": "#/components/schemas/RecordPriceSheetItem9d7f"
+          },
+          "teamFormationRules": {
+            "$ref": "#/components/schemas/RecordContestTeamFormationcffb"
+          },
+          "scoreMultiplerSheet": {
+            "$ref": "#/components/schemas/RecordScoreCardItemTypeSco24cd"
+          },
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ContestStatus"
+          },
+          "entryPriceCurrency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "walletId": {
+            "type": "string"
+          },
+          "leaderBoard": {
+            "$ref": "#/components/schemas/RecordLeaderBoardItema4eb"
+          },
+          "createdAt": {
+            "type": "number",
+            "format": "double"
+          },
+          "submittedDreamTeamCount": {
+            "type": "number",
+            "format": "double"
+          },
+          "teams": {
+            "items": {
+              "$ref": "#/components/schemas/DreamTeam"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "type",
+          "matchId",
+          "entryPrice",
+          "description",
+          "teamsTotalLimit",
+          "teamsPerUserLimit",
+          "priceSheet",
+          "teamFormationRules",
+          "scoreMultiplerSheet",
+          "id",
+          "status",
+          "entryPriceCurrency",
+          "walletId",
+          "leaderBoard",
+          "createdAt",
+          "submittedDreamTeamCount",
+          "teams"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "MatchWithContestsResponse": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MatchType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MatchStatus"
+          },
+          "name": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "subType": {
+            "type": "string"
+          },
+          "innings": {
+            "type": "number",
+            "format": "double"
+          },
+          "currentInnings": {
+            "type": "number",
+            "format": "double"
+          },
+          "matchConclusion": {
+            "type": "string"
+          },
+          "series": {
+            "type": "string"
+          },
+          "inningScores": {
+            "items": {
+              "$ref": "#/components/schemas/InningScore"
+            },
+            "type": "array"
+          },
+          "createdAtEpoch": {
+            "type": "number",
+            "format": "double"
+          },
+          "matchSource": {
+            "$ref": "#/components/schemas/RecordMatchSource2889"
+          },
+          "contestCount": {
+            "type": "number",
+            "format": "double"
+          },
+          "prizePool": {
+            "type": "number",
+            "format": "double"
+          },
+          "teams": {
+            "items": {
+              "$ref": "#/components/schemas/RealTeamWithRealTeamPlayers"
+            },
+            "type": "array"
+          },
+          "contests": {
+            "items": {
+              "$ref": "#/components/schemas/ContestWithUserDreamTeams"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "startTime",
+          "type",
+          "status",
+          "name",
+          "matchSource",
+          "contestCount",
+          "prizePool",
+          "teams",
+          "contests"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "MatchWithContestSummary": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MatchType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MatchStatus"
+          },
+          "name": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "subType": {
+            "type": "string"
+          },
+          "innings": {
+            "type": "number",
+            "format": "double"
+          },
+          "currentInnings": {
+            "type": "number",
+            "format": "double"
+          },
+          "matchConclusion": {
+            "type": "string"
+          },
+          "series": {
+            "type": "string"
+          },
+          "inningScores": {
+            "items": {
+              "$ref": "#/components/schemas/InningScore"
+            },
+            "type": "array"
+          },
+          "createdAtEpoch": {
+            "type": "number",
+            "format": "double"
+          },
+          "matchSource": {
+            "$ref": "#/components/schemas/RecordMatchSource2889"
+          },
+          "contestCount": {
+            "type": "number",
+            "format": "double"
+          },
+          "prizePool": {
+            "type": "number",
+            "format": "double"
+          },
+          "contests": {
+            "items": {
+              "properties": {
+                "status": {
+                  "$ref": "#/components/schemas/ContestStatus"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": ["status", "id"],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "startTime",
+          "type",
+          "status",
+          "name",
+          "matchSource",
+          "contestCount",
+          "prizePool",
+          "contests"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "MatchesByDateRangeResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MatchWithContestSummary"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number",
+                "format": "double"
+              }
+            ]
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        },
+        "required": ["items", "hasMore"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ModelMatchWithRealTeamsAn4f82": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MatchType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MatchStatus"
+          },
+          "name": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "subType": {
+            "type": "string"
+          },
+          "innings": {
+            "type": "number",
+            "format": "double"
+          },
+          "currentInnings": {
+            "type": "number",
+            "format": "double"
+          },
+          "matchConclusion": {
+            "type": "string"
+          },
+          "series": {
+            "type": "string"
+          },
+          "inningScores": {
+            "items": {
+              "$ref": "#/components/schemas/InningScore"
+            },
+            "type": "array"
+          },
+          "createdAtEpoch": {
+            "type": "number",
+            "format": "double"
+          },
+          "matchSource": {
+            "$ref": "#/components/schemas/RecordMatchSource2889"
+          },
+          "contestCount": {
+            "type": "number",
+            "format": "double"
+          },
+          "prizePool": {
+            "type": "number",
+            "format": "double"
+          },
+          "teams": {
+            "items": {
+              "$ref": "#/components/schemas/RealTeamWithRealTeamPlayers"
+            },
+            "type": "array"
+          },
+          "contests": {
+            "items": {
+              "$ref": "#/components/schemas/ContestWithUserDreamTeams"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "startTime",
+          "type",
+          "status",
+          "name",
+          "matchSource",
+          "contestCount",
+          "prizePool",
+          "teams",
+          "contests"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "DreamTeamWithoutPlayers": {
+        "properties": {
+          "matchId": {
+            "type": "string"
+          },
+          "contestId": {
+            "type": "string"
+          },
+          "ownerId": {
+            "type": "string"
+          },
+          "dreamTeamId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DreamTeamStatus"
+          },
+          "subStatus": {
+            "$ref": "#/components/schemas/DreamTeamSubStatus"
+          },
+          "createdAt": {
+            "type": "number",
+            "format": "double"
+          },
+          "submittedAt": {
+            "type": "number",
+            "format": "double"
+          },
+          "score": {
+            "type": "number",
+            "format": "double"
+          },
+          "rank": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "required": [
+          "matchId",
+          "contestId",
+          "ownerId",
+          "dreamTeamId",
+          "name",
+          "status",
+          "subStatus",
+          "createdAt"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "CreateDraftRequest": {
+        "properties": {
+          "matchId": {
+            "type": "string"
+          },
+          "contestId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["matchId", "contestId"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "PickDreamTeamWithPlayerT154b": {
+        "properties": {
+          "players": {
+            "items": {
+              "properties": {
+                "playerRole": {
+                  "$ref": "#/components/schemas/PlayerRole"
+                },
+                "playerProfileId": {
+                  "type": "string"
+                }
+              },
+              "required": ["playerRole", "playerProfileId"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "matchId": {
+            "type": "string"
+          },
+          "contestId": {
+            "type": "string"
+          },
+          "dreamTeamId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "submittedAt": {
+            "type": "number",
+            "format": "double"
+          },
+          "score": {
+            "type": "number",
+            "format": "double"
+          },
+          "rank": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "required": ["players", "matchId", "contestId", "dreamTeamId", "name"],
+        "type": "object",
+        "description": "From T, pick a set of properties whose keys are in the union K"
+      },
+      "OmitDreamTeamWithPlayerT0e8c": {
+        "$ref": "#/components/schemas/PickDreamTeamWithPlayerT154b",
+        "description": "Construct a type with the properties of T except for those in type K."
+      },
+      "UpdatePlayersRequest": {
+        "properties": {
+          "dreamTeam": {
+            "$ref": "#/components/schemas/OmitDreamTeamWithPlayerT0e8c"
+          }
+        },
+        "required": ["dreamTeam"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "UpdateRolesRequest": {
+        "properties": {
+          "dreamTeam": {
+            "$ref": "#/components/schemas/OmitDreamTeamWithPlayerT0e8c"
+          }
+        },
+        "required": ["dreamTeam"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "PaymentStatusResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "dreamTeamId": {
+            "type": "string"
+          }
+        },
+        "required": ["success", "dreamTeamId"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "PayForDreamTeamRequest": {
+        "properties": {
+          "dreamTeam": {
+            "properties": {
+              "contestId": {
+                "type": "string"
+              },
+              "matchId": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": ["contestId", "matchId", "id"],
+            "type": "object"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": ["wallet", "card"]
+          }
+        },
+        "required": ["dreamTeam", "paymentMethod"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "PaginatedMatchWithRealTeamsAn6f7e": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ModelMatchWithRealTeamsAn4f82"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number",
+                "format": "double"
+              }
+            ]
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        },
+        "required": ["items", "hasMore"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "Banner": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "imageUrl"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "DetailsGBP": {
+        "properties": {
+          "sortCode": {
+            "type": "string"
+          },
+          "accountNumber": {
+            "type": "string"
+          }
+        },
+        "required": ["sortCode", "accountNumber"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "DetailsEUR": {
+        "properties": {
+          "iban": {
+            "type": "string"
+          }
+        },
+        "required": ["iban"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "DetailsUSD": {
+        "properties": {
+          "routingNumber": {
+            "type": "string"
+          },
+          "accountNumber": {
+            "type": "string"
+          },
+          "accountType": {
+            "type": "string",
+            "enum": ["CHECKING", "SAVINGS"]
+          }
+        },
+        "required": ["routingNumber", "accountNumber", "accountType"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "DetailsINR": {
+        "properties": {
+          "ifscCode": {
+            "type": "string"
+          },
+          "accountNumber": {
+            "type": "string"
+          }
+        },
+        "required": ["ifscCode", "accountNumber"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "DetailsAUD": {
+        "properties": {
+          "bsbCode": {
+            "type": "string"
+          },
+          "accountNumber": {
+            "type": "string"
+          }
+        },
+        "required": ["bsbCode", "accountNumber"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "DetailsCAD": {
+        "properties": {
+          "transitNumber": {
+            "type": "string"
+          },
+          "institutionNumber": {
+            "type": "string"
+          },
+          "accountNumber": {
+            "type": "string"
+          }
+        },
+        "required": ["transitNumber", "institutionNumber", "accountNumber"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "DetailsIBAN": {
+        "properties": {
+          "iban": {
+            "type": "string"
+          }
+        },
+        "required": ["iban"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "Recordstringany": {
+        "properties": {},
+        "additionalProperties": {},
+        "type": "object",
+        "description": "Construct a type with a set of properties K of type T"
+      },
+      "BankAccountDetails": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DetailsGBP"
+          },
+          {
+            "$ref": "#/components/schemas/DetailsEUR"
+          },
+          {
+            "$ref": "#/components/schemas/DetailsUSD"
+          },
+          {
+            "$ref": "#/components/schemas/DetailsINR"
+          },
+          {
+            "$ref": "#/components/schemas/DetailsAUD"
+          },
+          {
+            "$ref": "#/components/schemas/DetailsCAD"
+          },
+          {
+            "$ref": "#/components/schemas/DetailsIBAN"
+          },
+          {
+            "$ref": "#/components/schemas/Recordstringany"
+          }
+        ]
+      },
+      "BankAccount": {
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "accountHolderName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["individual", "business"]
+          },
+          "address": {
+            "properties": {
+              "state": {
+                "type": "string"
+              },
+              "firstLine": {
+                "type": "string"
+              },
+              "postCode": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "country": {
+                "type": "string"
+              }
+            },
+            "required": ["country"],
+            "type": "object"
+          },
+          "dateOfBirth": {
+            "type": "string"
+          },
+          "details": {
+            "$ref": "#/components/schemas/BankAccountDetails"
+          },
+          "id": {
+            "type": "string"
+          },
+          "wiseRecipientId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "number",
+            "format": "double"
+          },
+          "updatedAt": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "required": [
+          "userId",
+          "currency",
+          "accountHolderName",
+          "type",
+          "address",
+          "details",
+          "id",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "PickBankAccountToCreateE31e9": {
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "accountHolderName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["individual", "business"]
+          },
+          "address": {
+            "properties": {
+              "state": {
+                "type": "string"
+              },
+              "firstLine": {
+                "type": "string"
+              },
+              "postCode": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "country": {
+                "type": "string"
+              }
+            },
+            "required": ["country"],
+            "type": "object"
+          },
+          "dateOfBirth": {
+            "type": "string"
+          },
+          "details": {
+            "$ref": "#/components/schemas/BankAccountDetails"
+          }
+        },
+        "required": [
+          "currency",
+          "accountHolderName",
+          "type",
+          "address",
+          "details"
+        ],
+        "type": "object",
+        "description": "From T, pick a set of properties whose keys are in the union K"
+      },
+      "OmitBankAccountToCreateI70df": {
+        "$ref": "#/components/schemas/PickBankAccountToCreateE31e9",
+        "description": "Construct a type with the properties of T except for those in type K."
+      },
+      "MobileCallbackResponse": {
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "required": ["accessToken", "refreshToken"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "SuccessResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": ["success"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "SignupRequest": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": ["email", "name", "password"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "Role": {
+        "enum": ["HOUSE", "GUEST", "PRACTICE", "ADMIN"],
+        "type": "string"
+      },
+      "LoginResponse": {
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "user": {
+            "properties": {
+              "role": {
+                "$ref": "#/components/schemas/Role"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": ["role", "name", "email", "id"],
+            "type": "object"
+          }
+        },
+        "required": ["accessToken", "user"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "VerifyEmailRequest": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": ["email", "code"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": ["email", "password"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ForgotPasswordRequest": {
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": ["email"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ResetPasswordRequest": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "newPassword": {
+            "type": "string"
+          }
+        },
+        "required": ["email", "code", "newPassword"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "RequestEmailChangeRequest": {
+        "properties": {
+          "newEmail": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": ["newEmail", "password"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "VerifyEmailChangeRequest": {
+        "properties": {
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": ["code"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "RefreshTokenResponse": {
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "required": ["accessToken"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "RefreshTokenRequest": {
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          },
+          "withCredentials": {
+            "type": "boolean"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "CurrentUserResponse": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/Role"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["id", "roles"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "UpdateProfileResponse": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/Role"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["id", "roles"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "UpdateProfileRequest": {
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["name"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "LogoutResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": ["success"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "LogoutRequest": {
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "jwt": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "info": {
+    "title": "fantasy-sport-be",
+    "version": "1.0.0",
+    "license": {
+      "name": "ISC"
+    },
+    "contact": {}
+  },
+  "paths": {
+    "/withdrawals/quote": {
+      "post": {
+        "operationId": "CreateQuote",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WiseQuote"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get a Wise quote for a withdrawal",
+        "tags": ["Withdrawals"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateQuoteRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/withdrawals/accounts": {
+      "get": {
+        "operationId": "GetWithdrawalAccounts",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WithdrawalAccountsResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get the user's withdrawal account emails (Wise and Binance)",
+        "tags": ["Withdrawals"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": []
+      },
+      "put": {
+        "operationId": "UpdateWithdrawalAccounts",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WithdrawalAccountsResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Set or update the user's withdrawal account emails (Wise and/or Binance)",
+        "tags": ["Withdrawals"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWithdrawalAccountsRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/withdrawals/submit": {
+      "post": {
+        "operationId": "SubmitWithdrawal",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmitWithdrawalResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Submit a withdrawal request.\n\nAtomically deducts `amount` from the authenticated user's wallet and\ncreates a Transaction record with status `SUBMITTED`. The withdrawal\nwill be reviewed and processed by an admin or an automated job.",
+        "tags": ["Withdrawals"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitWithdrawalRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wallets/get": {
+      "get": {
+        "operationId": "GetUserWallet",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Wallet"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get user's wallet balance",
+        "tags": ["Wallets"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": []
+      }
+    },
+    "/wallets/transactions": {
+      "get": {
+        "operationId": "GetUserWalletWithTransactions",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletWithTransactions"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get user's wallet with paginated transactions",
+        "tags": ["Wallets"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [
+          {
+            "description": "Number of transactions per page (1-100, default 20)",
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "double",
+              "type": "number"
+            }
+          },
+          {
+            "description": "Pagination cursor (createdAt timestamp)",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/wallets/stripe/config": {
+      "get": {
+        "operationId": "GetStripeConfig",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StripeConfigResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get Stripe configuration",
+        "tags": ["Wallets"],
+        "security": [],
+        "parameters": []
+      }
+    },
+    "/wallets/topups/payment-intent": {
+      "post": {
+        "operationId": "CreatePaymentIntent",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentIntentResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Create a Stripe PaymentIntent for mobile top-up",
+        "tags": ["Wallets"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "description": "The amount in major units and optional currency",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentIntentRequest",
+                "description": "The amount in major units and optional currency"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wallets/topups/checkout-session": {
+      "post": {
+        "operationId": "CreateCheckoutSession",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSessionResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Create a Stripe Checkout Session for web top-up",
+        "tags": ["Wallets"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "description": "The amount in major units and optional currency",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutSessionRequest",
+                "description": "The amount in major units and optional currency"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wallets/stripe/webhook": {
+      "post": {
+        "operationId": "HandleStripeWebhook",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["success"],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "description": "Stripe webhook endpoint for local testing.\nThis endpoint receives events from Stripe (e.g., via stripe-cli listen)\nand processes them asynchronously.",
+        "tags": ["Wallets"],
+        "security": [],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      }
+    },
+    "/matches/new": {
+      "get": {
+        "operationId": "GetNewMatches",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchesNewResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get all new matches with contests for the authenticated user",
+        "tags": ["Matches"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [
+          {
+            "description": "Number of items per page (1-50, default 10)",
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "format": "double",
+              "type": "number"
+            }
+          },
+          {
+            "description": "Pagination cursor (startTime epoch)",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "double",
+              "type": "number"
+            }
+          }
+        ]
+      }
+    },
+    "/matches/settingup": {
+      "get": {
+        "operationId": "GetSettingupMatches",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchesScoreResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get matches that are in SETTINGUP status",
+        "tags": ["Matches"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [
+          {
+            "description": "Number of items per page (1-50, default 10)",
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "format": "double",
+              "type": "number"
+            }
+          },
+          {
+            "description": "Pagination cursor (startTime epoch)",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "double",
+              "type": "number"
+            }
+          }
+        ]
+      }
+    },
+    "/matches/score": {
+      "get": {
+        "operationId": "GetMatchesScore",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchesScoreResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get matches with scores filtered by status",
+        "tags": ["Matches"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [
+          {
+            "description": "Match status (PREMATCH, INMATCH, MATCHENDED, etc.) or comma-separated list of statuses",
+            "in": "query",
+            "name": "status",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Number of items per page (1-50, default 10)",
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "format": "double",
+              "type": "number"
+            }
+          },
+          {
+            "description": "Optional match type filter",
+            "in": "query",
+            "name": "type",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Pagination cursor (startTime epoch)",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "double",
+              "type": "number"
+            }
+          }
+        ]
+      }
+    },
+    "/matches/score/{matchId}": {
+      "get": {
+        "operationId": "GetMatchScore",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchScoreResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get a specific match with its score details",
+        "tags": ["Matches"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [
+          {
+            "description": "The match ID",
+            "in": "path",
+            "name": "matchId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/matches/with_contests/{matchId}": {
+      "get": {
+        "operationId": "GetMatchWithContests",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchWithContestsResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get a match with all its contests and user's dream teams",
+        "tags": ["Matches"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [
+          {
+            "description": "The match ID",
+            "in": "path",
+            "name": "matchId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Number of contests per page (1-50, default 10)",
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "format": "double",
+              "type": "number"
+            }
+          },
+          {
+            "description": "Pagination cursor",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "double",
+              "type": "number"
+            }
+          }
+        ]
+      }
+    },
+    "/matches/by-date-range": {
+      "get": {
+        "operationId": "GetMatchesByDateRange",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchesByDateRangeResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get matches with contests within a date range",
+        "tags": ["Matches"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [
+          {
+            "description": "Start time (epoch ms)",
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "format": "double",
+              "type": "number"
+            }
+          },
+          {
+            "description": "End time (epoch ms)",
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "format": "double",
+              "type": "number"
+            }
+          },
+          {
+            "description": "Number of items per page (1-50, default 10)",
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "format": "double",
+              "type": "number"
+            }
+          },
+          {
+            "description": "Pagination cursor (startTime epoch)",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "format": "double",
+              "type": "number"
+            }
+          }
+        ]
+      }
+    },
+    "/dream-teams/public/{dreamTeamId}": {
+      "get": {
+        "operationId": "GetPublicDreamTeam",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelMatchWithRealTeamsAn4f82"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get a public dream team by ID (viewable by any authenticated user)",
+        "tags": ["Dream Teams"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [
+          {
+            "description": "The dream team ID",
+            "in": "path",
+            "name": "dreamTeamId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "The match ID",
+            "in": "query",
+            "name": "matchId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "The contest ID",
+            "in": "query",
+            "name": "contestId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "The owner's user ID",
+            "in": "query",
+            "name": "ownerId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/dream-teams/{dreamTeamId}": {
+      "get": {
+        "operationId": "GetUserDreamTeam",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelMatchWithRealTeamsAn4f82"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get user's own dream team by ID",
+        "tags": ["Dream Teams"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [
+          {
+            "description": "The dream team ID",
+            "in": "path",
+            "name": "dreamTeamId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "The match ID",
+            "in": "query",
+            "name": "matchId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "The contest ID",
+            "in": "query",
+            "name": "contestId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/dream-teams/draft": {
+      "post": {
+        "operationId": "CreateDraftDreamTeam",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DreamTeamWithoutPlayers"
+                }
+              }
+            }
+          }
+        },
+        "description": "Create a new draft dream team",
+        "tags": ["Dream Teams"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDraftRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dream-teams/update": {
+      "post": {
+        "operationId": "UpdateDreamTeamPlayers",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        },
+        "description": "Update dream team players",
+        "tags": ["Dream Teams"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePlayersRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dream-teams/update_roles": {
+      "post": {
+        "operationId": "UpdateDreamTeamPlayerRoles",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        },
+        "description": "Update player roles (captain, vice-captain) in a dream team",
+        "tags": ["Dream Teams"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRolesRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dream-teams/pay": {
+      "post": {
+        "operationId": "PayForDreamTeam",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentStatusResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Pay for a dream team to enter a contest",
+        "tags": ["Dream Teams"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayForDreamTeamRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/contests/my-contests/live": {
+      "get": {
+        "operationId": "GetLiveContests",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedMatchWithRealTeamsAn6f7e"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get all live contests for the authenticated user",
+        "tags": ["Contests"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [
+          {
+            "description": "Number of items per page",
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "format": "double",
+              "type": "number"
+            }
+          },
+          {
+            "description": "Pagination cursor",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/contests/my-contests/upcoming": {
+      "get": {
+        "operationId": "GetUpcomingContests",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedMatchWithRealTeamsAn6f7e"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get all upcoming contests for the authenticated user",
+        "tags": ["Contests"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [
+          {
+            "description": "Number of items per page",
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "format": "double",
+              "type": "number"
+            }
+          },
+          {
+            "description": "Pagination cursor",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/contests/my-contests/completed": {
+      "get": {
+        "operationId": "GetCompletedContests",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedMatchWithRealTeamsAn6f7e"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get all completed contests for the authenticated user",
+        "tags": ["Contests"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [
+          {
+            "description": "Number of items per page",
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "format": "double",
+              "type": "number"
+            }
+          },
+          {
+            "description": "Pagination cursor",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/contests/my_teams/{matchId}/{contestId}": {
+      "get": {
+        "operationId": "GetContestWithUserTeams",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelMatchWithRealTeamsAn4f82"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get contest details with user's teams",
+        "tags": ["Contests"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [
+          {
+            "description": "The match ID",
+            "in": "path",
+            "name": "matchId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "The contest ID",
+            "in": "path",
+            "name": "contestId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/contests/leader_board/{matchId}/{contestId}": {
+      "get": {
+        "operationId": "GetContestLeaderboard",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchWithRealTeamsAndContests"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get contest leaderboard",
+        "tags": ["Contests"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [
+          {
+            "description": "The match ID",
+            "in": "path",
+            "name": "matchId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "The contest ID",
+            "in": "path",
+            "name": "contestId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/banners": {
+      "get": {
+        "operationId": "GetBanners",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Banner"
+                  },
+                  "type": "array"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get all available banners\nReturns array of banner objects with id and imageUrl",
+        "tags": ["Banners"],
+        "security": [],
+        "parameters": []
+      }
+    },
+    "/bank-accounts": {
+      "post": {
+        "operationId": "CreateBankAccount",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankAccount"
+                }
+              }
+            }
+          }
+        },
+        "description": "Create a new bank account for the user",
+        "tags": ["Bank Accounts"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OmitBankAccountToCreateI70df"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "GetBankAccounts",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BankAccount"
+                  },
+                  "type": "array"
+                }
+              }
+            }
+          }
+        },
+        "description": "List all bank accounts of the user",
+        "tags": ["Bank Accounts"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": []
+      }
+    },
+    "/auth/google": {
+      "get": {
+        "operationId": "GoogleLogin",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "description": "Initiate Google OAuth login",
+        "tags": ["Authentication"],
+        "security": [],
+        "parameters": []
+      }
+    },
+    "/auth/google/callback": {
+      "get": {
+        "operationId": "GoogleCallback",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "description": "Google OAuth callback",
+        "tags": ["Authentication"],
+        "security": [],
+        "parameters": []
+      }
+    },
+    "/auth/google/mobile/callback": {
+      "get": {
+        "operationId": "GoogleMobileCallback",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileCallbackResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Exchange Google OAuth token for app tokens (mobile clients)\nVerifies Google token and creates user if needed",
+        "tags": ["Authentication"],
+        "security": [],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/auth/signup": {
+      "post": {
+        "operationId": "Signup",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Sign up with email and password",
+        "tags": ["Authentication"],
+        "security": [],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/verify-email": {
+      "post": {
+        "operationId": "VerifyEmail",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Verify email with code",
+        "tags": ["Authentication"],
+        "security": [],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "Login",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Login with email and password",
+        "tags": ["Authentication"],
+        "security": [],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/forgot-password": {
+      "post": {
+        "operationId": "ForgotPassword",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Request password reset",
+        "tags": ["Authentication"],
+        "security": [],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "operationId": "ResetPassword",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Reset password with code",
+        "tags": ["Authentication"],
+        "security": [],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/request-email-change": {
+      "post": {
+        "operationId": "RequestEmailChange",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Request email change",
+        "tags": ["Authentication"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestEmailChangeRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/verify-email-change": {
+      "post": {
+        "operationId": "VerifyEmailChange",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Verify email change",
+        "tags": ["Authentication"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailChangeRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "operationId": "RefreshToken",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefreshTokenResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Refresh access token using refresh token\nWeb clients send cookie, mobile clients send in body",
+        "tags": ["Authentication"],
+        "security": [],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "operationId": "GetCurrentUser",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get current authenticated user info",
+        "tags": ["Authentication"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": []
+      }
+    },
+    "/auth/profile": {
+      "put": {
+        "operationId": "UpdateProfile",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateProfileResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Update user profile (name and/or email)",
+        "tags": ["Authentication"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "Logout",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoutResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Logout user by revoking refresh token",
+        "tags": ["Authentication"],
+        "security": [],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogoutRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ]
+}
