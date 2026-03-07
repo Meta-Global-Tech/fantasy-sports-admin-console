@@ -87,6 +87,34 @@ export interface MatchesByDateRangeResponse {
   hasMore: boolean;
 }
 
+export type ContestType =
+  | "POOL500"
+  | "POOL100"
+  | "POOL50"
+  | "POOL25"
+  | "POOL10"
+  | "POOL3"
+  | "HEADTOHEAD"
+  | "PRACTICE";
+
+export interface Contest {
+  id: string;
+  matchId: string;
+  type: ContestType;
+  status: ContestStatus;
+  entryPrice: number;
+  entryPriceCurrency: Currency;
+  description?: string;
+  teamsTotalLimit: number;
+  teamsPerUserLimit: number;
+  submittedDreamTeamCount: number;
+  prizePool?: number;
+}
+
+export interface MatchWithContestsResponse extends MatchWithContestSummary {
+  contests: Contest[];
+}
+
 // ── Authentication ───────────────────────────────────────────────────────────
 
 export interface LoginRequest {

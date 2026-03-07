@@ -1,12 +1,20 @@
 import type { MatchWithContestSummary } from "@/types";
-import { formatDate, MATCH_STATUS_COLORS, CONTEST_STATUS_COLORS } from "@/lib/utils";
+import {
+  formatDate,
+  MATCH_STATUS_COLORS,
+  CONTEST_STATUS_COLORS,
+} from "@/lib/utils";
 
 interface MatchCardProps {
   match: MatchWithContestSummary;
+  onClick?: (matchId: string) => void;
+  isSelected?: boolean;
 }
 
-export function MatchCard({ match }: MatchCardProps) {
-  const statusColor = MATCH_STATUS_COLORS[match.status] ?? "bg-slate-500/20 text-slate-400 border-slate-500/30";
+export function MatchCard({ match, onClick, isSelected }: MatchCardProps) {
+  const statusColor =
+    MATCH_STATUS_COLORS[match.status] ??
+    "bg-slate-500/20 text-slate-400 border-slate-500/30";
 
   // Get contest status distribution
   const contestStatusCounts = match.contests.reduce(
@@ -18,13 +26,24 @@ export function MatchCard({ match }: MatchCardProps) {
   );
 
   return (
-    <div className="group bg-[#0d0d14] border border-white/5 rounded-xl p-4 hover:border-white/10 hover:bg-[#101018] transition-all">
+    <div
+      onClick={() => onClick?.(match.id)}
+      className={`group bg-[#0d0d14] border rounded-xl p-4 transition-all cursor-pointer ${
+        isSelected
+          ? "border-emerald-500/50 bg-emerald-500/5 shadow-[0_0_20px_-5px_rgba(16,185,129,0.1)]"
+          : "border-white/5 hover:border-white/10 hover:bg-[#101018]"
+      }`}
+    >
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-white truncate">{match.name}</p>
+          <p className="text-sm font-semibold text-white truncate">
+            {match.name}
+          </p>
           {match.series && (
-            <p className="text-xs text-slate-500 truncate mt-0.5">{match.series}</p>
+            <p className="text-xs text-slate-500 truncate mt-0.5">
+              {match.series}
+            </p>
           )}
         </div>
         <span
@@ -49,7 +68,9 @@ export function MatchCard({ match }: MatchCardProps) {
               key={inn.inning}
               className="flex-1 bg-white/3 rounded-lg px-3 py-2 border border-white/5"
             >
-              <p className="text-[10px] text-slate-500 mb-0.5">Inning {inn.inning}</p>
+              <p className="text-[10px] text-slate-500 mb-0.5">
+                Inning {inn.inning}
+              </p>
               <p className="text-sm font-mono font-semibold text-white">
                 {inn.runs}/{inn.wickets}
                 <span className="text-xs text-slate-400 font-normal ml-1">
@@ -85,8 +106,9 @@ export function MatchCard({ match }: MatchCardProps) {
               <span
                 key={status}
                 className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
-                  CONTEST_STATUS_COLORS[status as keyof typeof CONTEST_STATUS_COLORS] ??
-                  "bg-slate-500/20 text-slate-400"
+                  CONTEST_STATUS_COLORS[
+                    status as keyof typeof CONTEST_STATUS_COLORS
+                  ] ?? "bg-slate-500/20 text-slate-400"
                 }`}
               >
                 {count} {status}
@@ -97,7 +119,9 @@ export function MatchCard({ match }: MatchCardProps) {
       </div>
 
       {/* Match ID */}
-      <p className="mt-2 text-[10px] font-mono text-slate-700 truncate">{match.id}</p>
+      <p className="mt-2 text-[10px] font-mono text-slate-700 truncate">
+        {match.id}
+      </p>
     </div>
   );
 }

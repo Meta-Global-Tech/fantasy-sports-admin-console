@@ -2,6 +2,7 @@ import axios from "axios";
 import type {
   GetMatchesByDateRangeParams,
   MatchesByDateRangeResponse,
+  MatchWithContestsResponse,
   LoginRequest,
   LoginResponse,
 } from "@/types";
@@ -86,6 +87,14 @@ export const matchesApi = {
     const response = await api.get<MatchesByDateRangeResponse>(
       "/matches/by-date-range",
       { params },
+    );
+    return response.data;
+  },
+  async getMatchWithContests(
+    matchId: string,
+  ): Promise<MatchWithContestsResponse> {
+    const response = await api.get<MatchWithContestsResponse>(
+      `/matches/with_contests/${matchId}`,
     );
     return response.data;
   },
