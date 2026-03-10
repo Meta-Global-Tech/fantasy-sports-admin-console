@@ -51,9 +51,52 @@ export interface MatchSource {
   createdAt: number;
 }
 
+export interface TransactionCounts {
+  submitted: number;
+  processed: number;
+  failed: number;
+}
+
 export interface ContestSummary {
   id: string;
   status: ContestStatus;
+  transactionCounts?: TransactionCounts;
+}
+
+export type TransactionStatus = "SUBMITTED" | "PROCESSED" | "FAILED";
+
+export interface Transaction {
+  id: string;
+  fromWalletId: string;
+  fromDescription: string;
+  toWalletId: string;
+  toDescription: string;
+  amount?: number;
+  currency?: Currency;
+  createdAt: string;
+  updatedAt: string;
+  status: TransactionStatus;
+  userId: string;
+  withdrawalToBeProcessed: boolean;
+}
+
+export interface PriceSheetItem {
+  description: string;
+  rankFrom: number;
+  rankTo: number;
+  price: number;
+  currency: Currency;
+  rowNumber: number;
+}
+
+export interface LeaderBoardEntry {
+  score: number;
+  dreamTeamName: string;
+  authorName: string;
+  rank: number;
+  rowNumber: number;
+  dreamTeamId: string;
+  authorId: string;
 }
 
 // ── Match with contest summary (used in by-date-range response) ───────────────
@@ -99,6 +142,7 @@ export type ContestType =
 
 export interface Contest {
   id: string;
+  contestId?: number;
   matchId: string;
   type: ContestType;
   status: ContestStatus;
@@ -109,6 +153,10 @@ export interface Contest {
   teamsPerUserLimit: number;
   submittedDreamTeamCount: number;
   prizePool?: number;
+  transactionCounts?: TransactionCounts;
+  transactions?: Transaction[];
+  leaderBoard?: Record<string, LeaderBoardEntry>;
+  priceSheet?: Record<string, PriceSheetItem>;
 }
 
 export interface MatchWithContestsResponse extends MatchWithContestSummary {
@@ -142,4 +190,14 @@ export interface GetMatchesByDateRangeParams {
   to: number;
   pageSize?: number;
   cursor?: number;
+}
+export interface SettleContestRequest {
+  transactions: {
+    amount: number;
+    userId: string;
+    transactionId: string;
+  }[];
+  status: ContestStatus;
+  contestId: string;
+  matchId: string;
 }

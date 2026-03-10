@@ -25,6 +25,24 @@ export function MatchCard({ match, onClick, isSelected }: MatchCardProps) {
     {} as Record<string, number>,
   );
 
+  // Get total transaction counts
+  const totalTransactions = match.contests.reduce(
+    (acc, c) => {
+      if (c.transactionCounts) {
+        acc.submitted += c.transactionCounts.submitted;
+        acc.processed += c.transactionCounts.processed;
+        acc.failed += c.transactionCounts.failed;
+      }
+      return acc;
+    },
+    { submitted: 0, processed: 0, failed: 0 },
+  );
+
+  const hasTransactions =
+    totalTransactions.submitted > 0 ||
+    totalTransactions.processed > 0 ||
+    totalTransactions.failed > 0;
+
   return (
     <div
       onClick={() => onClick?.(match.id)}
@@ -86,6 +104,42 @@ export function MatchCard({ match, onClick, isSelected }: MatchCardProps) {
       {match.matchConclusion && (
         <div className="mb-3 px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
           <p className="text-xs text-emerald-400">{match.matchConclusion}</p>
+        </div>
+      )}
+
+      {/* Transaction Summary */}
+      {hasTransactions && (
+        <div className="mb-3 flex gap-2">
+          {totalTransactions.submitted > 0 && (
+            <div className="flex-1 bg-blue-500/5 rounded-lg px-2 py-1 border border-blue-500/10">
+              <p className="text-[8px] text-blue-500 uppercase tracking-wider">
+                Submitted
+              </p>
+              <p className="text-xs font-semibold text-blue-400">
+                {totalTransactions.submitted}
+              </p>
+            </div>
+          )}
+          {totalTransactions.processed > 0 && (
+            <div className="flex-1 bg-emerald-500/5 rounded-lg px-2 py-1 border border-emerald-500/10">
+              <p className="text-[8px] text-emerald-500 uppercase tracking-wider">
+                Processed
+              </p>
+              <p className="text-xs font-semibold text-emerald-400">
+                {totalTransactions.processed}
+              </p>
+            </div>
+          )}
+          {totalTransactions.failed > 0 && (
+            <div className="flex-1 bg-red-500/5 rounded-lg px-2 py-1 border border-red-500/10">
+              <p className="text-[8px] text-red-500 uppercase tracking-wider">
+                Failed
+              </p>
+              <p className="text-xs font-semibold text-red-400">
+                {totalTransactions.failed}
+              </p>
+            </div>
+          )}
         </div>
       )}
 

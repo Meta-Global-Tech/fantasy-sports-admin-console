@@ -2,9 +2,10 @@ import axios from "axios";
 import type {
   GetMatchesByDateRangeParams,
   MatchesByDateRangeResponse,
-  MatchWithContestsResponse,
+  Contest,
   LoginRequest,
   LoginResponse,
+  SettleContestRequest,
 } from "@/types";
 
 // ── Token store ─────────────────────────────────────────────────────────────
@@ -90,12 +91,14 @@ export const matchesApi = {
     );
     return response.data;
   },
-  async getMatchWithContests(
-    matchId: string,
-  ): Promise<MatchWithContestsResponse> {
-    const response = await api.get<MatchWithContestsResponse>(
-      `/matches/with_contests/${matchId}`,
-    );
+  async getAllContestsByMatchId(matchId: string): Promise<Contest[]> {
+    const response = await api.get<Contest[]>(`/contests/all/${matchId}`);
     return response.data;
+  },
+};
+
+export const contestsApi = {
+  async settleContest(data: SettleContestRequest): Promise<void> {
+    await api.post("/contests/settle", data);
   },
 };

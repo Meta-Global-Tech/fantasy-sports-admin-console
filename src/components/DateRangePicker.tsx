@@ -8,6 +8,10 @@ interface DateRangePickerProps {
 
 const QUICK_RANGES = [
   { label: "Today", days: 0 },
+  { label: "Past 3d", days: -3 },
+  { label: "Past 7d", days: -7 },
+  { label: "Past 15d", days: -15 },
+  { label: "Past 30d", days: -30 },
   { label: "Next 3d", days: 3 },
   { label: "Next 7d", days: 7 },
   { label: "Next 30d", days: 30 },
@@ -19,11 +23,20 @@ function toDateInputValue(d: Date) {
 
 export function DateRangePicker({ from, to, onChange }: DateRangePickerProps) {
   function applyQuick(days: number) {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(end.getDate() + days);
-    end.setHours(23, 59, 59, 999);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    const start = new Date(now);
+    const end = new Date(now);
+
+    if (days >= 0) {
+      // Future range: Start today, end in X days
+      end.setDate(end.getDate() + days);
+    } else {
+      // Past range: Start X days ago, end today
+      start.setDate(start.getDate() + days);
+    }
+
     onChange(toDateInputValue(start), toDateInputValue(end));
   }
 

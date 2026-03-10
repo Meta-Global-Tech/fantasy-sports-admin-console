@@ -247,6 +247,9 @@
           },
           "withdrawalToBeProcessed": {
             "type": "boolean"
+          },
+          "userId": {
+            "type": "string"
           }
         },
         "required": [
@@ -817,6 +820,12 @@
           "submittedDreamTeamCount": {
             "type": "number",
             "format": "double"
+          },
+          "transactions": {
+            "items": {
+              "$ref": "#/components/schemas/Transaction"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -1731,6 +1740,12 @@
             "type": "number",
             "format": "double"
           },
+          "transactions": {
+            "items": {
+              "$ref": "#/components/schemas/Transaction"
+            },
+            "type": "array"
+          },
           "teams": {
             "items": {
               "$ref": "#/components/schemas/DreamTeam"
@@ -1917,6 +1932,24 @@
           "contests": {
             "items": {
               "properties": {
+                "transactionCounts": {
+                  "properties": {
+                    "failed": {
+                      "type": "number",
+                      "format": "double"
+                    },
+                    "processed": {
+                      "type": "number",
+                      "format": "double"
+                    },
+                    "submitted": {
+                      "type": "number",
+                      "format": "double"
+                    }
+                  },
+                  "required": ["failed", "processed", "submitted"],
+                  "type": "object"
+                },
                 "status": {
                   "$ref": "#/components/schemas/ContestStatus"
                 },
@@ -1924,7 +1957,7 @@
                   "type": "string"
                 }
               },
-              "required": ["status", "id"],
+              "required": ["transactionCounts", "status", "id"],
               "type": "object"
             },
             "type": "array"
@@ -3403,7 +3436,7 @@
         "tags": ["Matches"],
         "security": [
           {
-            "jwt": []
+            "jwt": ["ADMIN"]
           }
         ],
         "parameters": [
@@ -3930,6 +3963,105 @@
             }
           }
         ]
+      }
+    },
+    "/contests/all/{matchId}": {
+      "get": {
+        "operationId": "GetAllContestsByMatchId",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Contest"
+                  },
+                  "type": "array"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get all contests for a specific match",
+        "tags": ["Contests"],
+        "security": [
+          {
+            "jwt": ["ADMIN"]
+          }
+        ],
+        "parameters": [
+          {
+            "description": "The match ID",
+            "in": "path",
+            "name": "matchId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/contests/settle": {
+      "post": {
+        "operationId": "SettleContest",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "description": "Finalize contest settlement by approving transactions and updating status",
+        "tags": ["Contests"],
+        "security": [
+          {
+            "jwt": ["ADMIN"]
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "description": "The settlement details",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "transactions": {
+                    "items": {
+                      "properties": {
+                        "amount": {
+                          "type": "number",
+                          "format": "double"
+                        },
+                        "userId": {
+                          "type": "string"
+                        },
+                        "transactionId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["amount", "userId", "transactionId"],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "status": {
+                    "$ref": "#/components/schemas/ContestStatus"
+                  },
+                  "contestId": {
+                    "type": "string"
+                  },
+                  "matchId": {
+                    "type": "string"
+                  }
+                },
+                "required": ["transactions", "status", "contestId", "matchId"],
+                "type": "object",
+                "description": "The settlement details"
+              }
+            }
+          }
+        }
       }
     },
     "/banners": {
