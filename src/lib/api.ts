@@ -3,6 +3,7 @@ import type {
   GetMatchesByDateRangeParams,
   MatchesByDateRangeResponse,
   Contest,
+  MatchWithRealTeamsAndContests,
   LoginRequest,
   LoginResponse,
   SettleContestRequest,
@@ -91,8 +92,12 @@ export const matchesApi = {
     );
     return response.data;
   },
-  async getAllContestsByMatchId(matchId: string): Promise<Contest[]> {
-    const response = await api.get<Contest[]>(`/contests/all/${matchId}`);
+  async getAllContestsByMatchId(
+    matchId: string,
+  ): Promise<MatchWithRealTeamsAndContests> {
+    const response = await api.get<MatchWithRealTeamsAndContests>(
+      `/contests/all/${matchId}`,
+    );
     return response.data;
   },
 };

@@ -241,7 +241,7 @@
             "type": "string",
             "format": "date-time"
           },
-          "ammount": {
+          "amount": {
             "type": "number",
             "format": "double"
           },
@@ -261,7 +261,7 @@
           "toWalletId",
           "toDescription",
           "updatedAt",
-          "ammount",
+          "amount",
           "withdrawalToBeProcessed"
         ],
         "type": "object",
@@ -826,6 +826,10 @@
               "$ref": "#/components/schemas/Transaction"
             },
             "type": "array"
+          },
+          "walletBalance": {
+            "type": "number",
+            "format": "double"
           }
         },
         "required": [
@@ -1745,6 +1749,10 @@
               "$ref": "#/components/schemas/Transaction"
             },
             "type": "array"
+          },
+          "walletBalance": {
+            "type": "number",
+            "format": "double"
           },
           "teams": {
             "items": {

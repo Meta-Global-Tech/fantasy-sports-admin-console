@@ -8,6 +8,7 @@ import type {
   Contest,
   ContestStatus,
   SettleContestRequest,
+  MatchWithRealTeamsAndContests,
 } from "@/types";
 import { MatchCard } from "@/components/MatchCard";
 import { DateRangePicker } from "@/components/DateRangePicker";
@@ -157,9 +158,11 @@ export default function MatchesPage() {
 
   // Selection state
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
-  const [selectedMatchDetails, setSelectedMatchDetails] = useState<
-    Contest[] | null
-  >(null);
+  const [selectedMatchDetails, setSelectedMatchDetails] =
+    useState<MatchWithRealTeamsAndContests | null>(null);
+  const [activeSideTab, setActiveSideTab] = useState<"contests" | "teams">(
+    "contests",
+  );
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [selectedContestId, setSelectedContestId] = useState<string | null>(
     null,
@@ -213,6 +216,7 @@ export default function MatchesPage() {
   const handleMatchClick = async (matchId: string) => {
     setSelectedMatchId(matchId);
     setSelectedContestId(null);
+    setActiveSideTab("contests");
     setLoadingDetails(true);
     try {
       const details = await matchesApi.getAllContestsByMatchId(matchId);
@@ -464,16 +468,44 @@ export default function MatchesPage() {
                     </h2>
                   </div>
                 ) : (
-                  <>
-                    <h2 className="text-lg font-semibold text-white">
-                      Contests
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {selectedMatchDetails
-                        ? `${selectedMatchDetails.length} found`
-                        : "Loading..."}
-                    </p>
-                  </>
+                  <div className="flex flex-col gap-3 w-full">
+                    <div>
+                      <h2 className="text-lg font-semibold text-white">
+                        Match Details
+                      </h2>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {selectedMatchDetails?.contests
+                          ? `${selectedMatchDetails.contests.length} contests found`
+                          : "Loading..."}
+                      </p>
+                    </div>
+
+                    {/* Tabs */}
+                    {selectedMatchDetails && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setActiveSideTab("contests")}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                            activeSideTab === "contests"
+                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                              : "bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10"
+                          }`}
+                        >
+                          Contests
+                        </button>
+                        <button
+                          onClick={() => setActiveSideTab("teams")}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                            activeSideTab === "teams"
+                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                              : "bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10"
+                          }`}
+                        >
+                          Teams & Scorecards
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
               <button
@@ -497,386 +529,557 @@ export default function MatchesPage() {
                 </div>
               ) : selectedMatchDetails ? (
                 <div className="flex flex-col gap-4">
-                  {selectedContestId
-                    ? (() => {
-                        const contest = selectedMatchDetails.find(
-                          (c) => c.id === selectedContestId,
-                        );
-                        if (!contest) return null;
+                  {selectedContestId ? (
+                    (() => {
+                      const contest = selectedMatchDetails.contests.find(
+                        (c) => c.id === selectedContestId,
+                      );
+                      if (!contest) return null;
 
-                        const leaderboard = contest.leaderBoard
-                          ? Object.values(contest.leaderBoard).sort(
-                              (a, b) => a.rank - b.rank,
-                            )
-                          : [];
+                      const leaderboard = contest.leaderBoard
+                        ? Object.values(contest.leaderBoard).sort(
+                            (a, b) => a.rank - b.rank,
+                          )
+                        : [];
 
-                        const priceSheet = contest.priceSheet
-                          ? Object.values(contest.priceSheet).sort(
-                              (a, b) => a.rowNumber - b.rowNumber,
-                            )
-                          : [];
+                      const priceSheet = contest.priceSheet
+                        ? Object.values(contest.priceSheet).sort(
+                            (a, b) => a.rowNumber - b.rowNumber,
+                          )
+                        : [];
 
-                        return (
-                          <div className="flex flex-col gap-6">
-                            {/* Summary Info */}
-                            <div className="bg-white/3 border border-white/5 rounded-xl p-4">
-                              <div className="flex justify-between items-center mb-4">
-                                <span className="text-emerald-400 font-bold text-lg">
-                                  {contest.type}
-                                </span>
-                                <span
-                                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${CONTEST_STATUS_COLORS[contest.status] ?? "bg-slate-500/20 text-slate-400"}`}
-                                >
-                                  {contest.status}
-                                </span>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-4 text-xs mb-4">
-                                <div>
-                                  <p className="text-slate-500 uppercase text-[9px]">
-                                    Entry Price
-                                  </p>
-                                  <p className="text-white">
-                                    ${contest.entryPrice}{" "}
-                                    {contest.entryPriceCurrency}
-                                  </p>
-                                </div>
-                                <div>
-                                  <p className="text-slate-500 uppercase text-[9px]">
-                                    Teams
-                                  </p>
-                                  <p className="text-white">
-                                    {contest.submittedDreamTeamCount} /{" "}
-                                    {contest.teamsTotalLimit}
-                                  </p>
-                                </div>
-                              </div>
-
-                              <div className="grid grid-cols-1 gap-1 text-[10px] py-3 border-t border-white/5 font-mono">
-                                <p className="flex justify-between">
-                                  <span className="text-slate-500">
-                                    Contest ID:
-                                  </span>
-                                  <span className="text-white">
-                                    {contest.contestId || contest.id}
-                                  </span>
-                                </p>
-                                <p className="flex justify-between">
-                                  <span className="text-slate-500">
-                                    Match ID:
-                                  </span>
-                                  <span
-                                    className="text-white truncate ml-4"
-                                    title={contest.matchId}
-                                  >
-                                    {contest.matchId}
-                                  </span>
-                                </p>
-                              </div>
-
-                              {contest.description && (
-                                <p className="mt-2 text-xs text-slate-400 border-t border-white/5 pt-3">
-                                  {contest.description}
-                                </p>
-                              )}
-
-                              <a
-                                href={`${APP_FRONTEND_URL}/match/${selectedMatchId}/contest/${contest.id}/leaderboard`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center justify-center gap-2 w-full py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-semibold border border-emerald-500/20 transition-all mt-4"
-                              >
-                                <span>App Leaderboard</span>
-                                <span>↗</span>
-                              </a>
-
-                              {/* Settle/Refund Button */}
-                              {contest.status === "TOSETTLE" && (
-                                <div className="flex flex-col gap-2 mt-2">
-                                  <button
-                                    onClick={() =>
-                                      handleSettleContest(contest, "SETTLED")
-                                    }
-                                    className="flex items-center justify-center gap-2 w-full py-2 rounded-lg bg-blue-500/20 hover:bg-blue-600/30 text-blue-400 text-xs font-semibold border border-blue-500/30 transition-all shadow-lg shadow-blue-500/10"
-                                  >
-                                    Approve and Settle Contest
-                                  </button>
-                                </div>
-                              )}
-                              {contest.status === "TOREFUND" && (
-                                <div className="flex flex-col gap-2 mt-2">
-                                  <button
-                                    onClick={() =>
-                                      handleSettleContest(contest, "REFUNDED")
-                                    }
-                                    className="flex items-center justify-center gap-2 w-full py-2 rounded-lg bg-red-500/20 hover:bg-red-600/30 text-red-400 text-xs font-semibold border border-red-500/30 transition-all shadow-lg shadow-red-500/10"
-                                  >
-                                    Approve and Refund Contest
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Prize Pool / Price Sheet */}
-                            <div>
-                              <h3 className="text-sm font-semibold text-white mb-3">
-                                Prize Distribution
-                              </h3>
-                              {priceSheet.length > 0 ? (
-                                <div className="bg-white/3 border border-white/5 rounded-xl overflow-hidden">
-                                  <table className="w-full text-xs text-left">
-                                    <thead className="bg-white/5 text-slate-500 uppercase text-[9px] tracking-wider">
-                                      <tr>
-                                        <th className="px-3 py-2">Rank</th>
-                                        <th className="px-3 py-2">Prize</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/5">
-                                      {priceSheet.map((item, idx) => (
-                                        <tr
-                                          key={idx}
-                                          className="hover:bg-white/5 transition-colors"
-                                        >
-                                          <td className="px-3 py-2 text-slate-300">
-                                            {item.rankFrom === item.rankTo
-                                              ? `Rank ${item.rankFrom}`
-                                              : `Rank ${item.rankFrom}-${item.rankTo}`}
-                                          </td>
-                                          <td className="px-3 py-2 font-semibold text-white">
-                                            ${item.price} {item.currency}
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              ) : (
-                                <div className="bg-white/3 border border-dashed border-white/5 rounded-xl py-4 text-center text-slate-500 text-xs">
-                                  No prize information available
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Leaderboard */}
-                            <div>
-                              <h3 className="text-sm font-semibold text-white mb-3 flex items-center justify-between">
-                                Leaderboard
-                                <span className="text-[10px] text-slate-500">
-                                  {leaderboard.length} entries
-                                </span>
-                              </h3>
-                              {leaderboard.length > 0 ? (
-                                <div className="flex flex-col gap-2">
-                                  {leaderboard.map((entry) => (
-                                    <div
-                                      key={entry.rank}
-                                      className="bg-black/20 border border-white/5 rounded-lg p-3 flex items-center gap-3"
-                                    >
-                                      <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-xs font-bold text-emerald-400 shrink-0">
-                                        #{entry.rank}
-                                      </div>
-                                      <div className="min-w-0 flex-1">
-                                        <p className="text-xs font-semibold text-white truncate">
-                                          {entry.dreamTeamName}
-                                        </p>
-                                        <p className="text-[10px] text-slate-500 truncate">
-                                          {entry.authorName}
-                                        </p>
-                                      </div>
-                                      <div className="text-right">
-                                        <p className="text-xs font-bold text-white">
-                                          {entry.score}
-                                        </p>
-                                        <p className="text-[9px] text-slate-500">
-                                          Pts
-                                        </p>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <div className="bg-white/3 border border-dashed border-white/5 rounded-xl py-8 text-center text-slate-500 text-xs">
-                                  No leaderboard entries yet
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Transactions */}
-                            <div>
-                              <h3 className="text-sm font-semibold text-white mb-3 flex items-center justify-between">
-                                Transactions
-                                <span className="text-[10px] text-slate-500">
-                                  {contest.transactions?.length || 0} total
-                                </span>
-                              </h3>
-                              {(contest.transactions?.length || 0) > 0 ? (
-                                <div className="flex flex-col gap-3">
-                                  {contest.transactions?.map((tx) => (
-                                    <div
-                                      key={tx.id}
-                                      className="bg-black/20 border border-white/5 rounded-lg p-3"
-                                    >
-                                      <div className="flex justify-between items-start mb-2">
-                                        <div className="flex flex-col gap-1">
-                                          <span
-                                            className={`text-[8px] font-bold px-1.5 py-0.5 rounded w-fit ${
-                                              tx.status === "PROCESSED"
-                                                ? "bg-emerald-500/10 text-emerald-400"
-                                                : tx.status === "FAILED"
-                                                  ? "bg-red-500/10 text-red-500"
-                                                  : "bg-blue-500/10 text-blue-400"
-                                            }`}
-                                          >
-                                            {tx.status}
-                                          </span>
-                                          {tx.amount !== undefined && (
-                                            <span className="text-xs font-bold text-white">
-                                              ${tx.amount}{" "}
-                                              {tx.currency ||
-                                                contest.entryPriceCurrency}
-                                            </span>
-                                          )}
-                                        </div>
-                                        <span className="text-[9px] text-slate-500">
-                                          {new Date(
-                                            tx.createdAt,
-                                          ).toLocaleDateString()}
-                                        </span>
-                                      </div>
-                                      <p className="text-xs text-white mb-1">
-                                        {tx.fromDescription}
-                                      </p>
-                                      <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                                        <span className="truncate">
-                                          To: {tx.toDescription}
-                                        </span>
-                                      </div>
-                                      <p className="mt-2 text-[8px] text-slate-600 font-mono truncate">
-                                        ID: {tx.id}
-                                      </p>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <div className="bg-white/3 border border-dashed border-white/5 rounded-xl py-8 text-center text-slate-500 text-xs">
-                                  No transactions yet
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })()
-                    : selectedMatchDetails.map((contest) => {
-                        // Calculate transaction counts derived from transactions array if not provided
-                        const txCounts = contest.transactionCounts || {
-                          submitted:
-                            contest.transactions?.filter(
-                              (t) => t.status === "SUBMITTED",
-                            ).length || 0,
-                          processed:
-                            contest.transactions?.filter(
-                              (t) => t.status === "PROCESSED",
-                            ).length || 0,
-                          failed:
-                            contest.transactions?.filter(
-                              (t) => t.status === "FAILED",
-                            ).length || 0,
-                        };
-
-                        return (
-                          <div
-                            key={contest.id}
-                            onClick={() => setSelectedContestId(contest.id)}
-                            className="bg-white/3 border border-white/5 rounded-xl p-4 hover:border-white/10 transition-all cursor-pointer group"
-                          >
-                            <div className="flex items-start justify-between gap-3 mb-3">
-                              <div>
-                                <p className="text-sm font-semibold text-white group-hover:text-emerald-400 transition-colors">
-                                  {contest.type}
-                                </p>
-                                <p className="text-[10px] text-slate-500 mt-0.5">
-                                  ID: {contest.id}
-                                </p>
-                              </div>
+                      return (
+                        <div className="flex flex-col gap-6">
+                          {/* Summary Info */}
+                          <div className="bg-white/3 border border-white/5 rounded-xl p-4">
+                            <div className="flex justify-between items-center mb-4">
+                              <span className="text-emerald-400 font-bold text-lg">
+                                {contest.type}
+                              </span>
                               <span
-                                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                                  CONTEST_STATUS_COLORS[contest.status] ??
-                                  "bg-slate-500/20 text-slate-400"
-                                }`}
+                                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${CONTEST_STATUS_COLORS[contest.status] ?? "bg-slate-500/20 text-slate-400"}`}
                               >
                                 {contest.status}
                               </span>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3 mb-4">
-                              <div className="bg-black/20 rounded-lg px-2 py-1.5 border border-white/5">
-                                <p className="text-[9px] text-slate-500 uppercase tracking-wider">
+                            <div className="grid grid-cols-2 gap-4 text-xs mb-4">
+                              <div>
+                                <p className="text-slate-500 uppercase text-[9px]">
                                   Entry Price
                                 </p>
-                                <p className="text-xs font-semibold text-white">
+                                <p className="text-white">
                                   ${contest.entryPrice}{" "}
                                   {contest.entryPriceCurrency}
                                 </p>
                               </div>
-                              <div className="bg-black/20 rounded-lg px-2 py-1.5 border border-white/5">
-                                <p className="text-[9px] text-slate-500 uppercase tracking-wider">
+                              <div>
+                                <p className="text-slate-500 uppercase text-[9px]">
+                                  Wallet Balance
+                                </p>
+                                <p className="text-emerald-400 font-bold">
+                                  ${contest.walletBalance || 0}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-slate-500 uppercase text-[9px]">
                                   Teams
                                 </p>
-                                <p className="text-xs font-semibold text-white">
+                                <p className="text-white">
                                   {contest.submittedDreamTeamCount} /{" "}
                                   {contest.teamsTotalLimit}
                                 </p>
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-2 mb-4">
-                              <div className="bg-blue-500/5 rounded-lg px-2 py-1.5 border border-blue-500/10">
-                                <p className="text-[8px] text-blue-500 uppercase tracking-wider">
-                                  Subm
-                                </p>
-                                <p className="text-[11px] font-semibold text-blue-400">
-                                  {txCounts.submitted}
-                                </p>
-                              </div>
-                              <div className="bg-emerald-500/5 rounded-lg px-2 py-1.5 border border-emerald-500/10">
-                                <p className="text-[8px] text-emerald-500 uppercase tracking-wider">
-                                  Proc
-                                </p>
-                                <p className="text-[11px] font-semibold text-emerald-400">
-                                  {txCounts.processed}
-                                </p>
-                              </div>
-                              <div className="bg-red-500/5 rounded-lg px-2 py-1.5 border border-red-500/10">
-                                <p className="text-[8px] text-red-500 uppercase tracking-wider">
-                                  Fail
-                                </p>
-                                <p className="text-[11px] font-semibold text-red-400">
-                                  {txCounts.failed}
-                                </p>
-                              </div>
+                            <div className="grid grid-cols-1 gap-1 text-[10px] py-3 border-t border-white/5 font-mono">
+                              <p className="flex justify-between">
+                                <span className="text-slate-500">
+                                  Contest ID:
+                                </span>
+                                <span className="text-white">
+                                  {contest.contestId || contest.id}
+                                </span>
+                              </p>
+                              <p className="flex justify-between">
+                                <span className="text-slate-500">
+                                  Wallet ID:
+                                </span>
+                                <span
+                                  className="text-white truncate ml-4"
+                                  title={contest.walletId}
+                                >
+                                  {contest.walletId}
+                                </span>
+                              </p>
+                              <p className="flex justify-between">
+                                <span className="text-slate-500">
+                                  Match ID:
+                                </span>
+                                <span
+                                  className="text-white truncate ml-4"
+                                  title={contest.matchId}
+                                >
+                                  {contest.matchId}
+                                </span>
+                              </p>
                             </div>
 
-                            <div className="flex items-center gap-2">
-                              <div className="text-[10px] text-slate-500 flex items-center gap-1">
-                                <span>View Details</span>
-                                <span className="group-hover:translate-x-0.5 transition-transform">
-                                  →
-                                </span>
+                            {contest.description && (
+                              <p className="mt-2 text-xs text-slate-400 border-t border-white/5 pt-3">
+                                {contest.description}
+                              </p>
+                            )}
+
+                            <a
+                              href={`${APP_FRONTEND_URL}/match/${selectedMatchId}/contest/${contest.id}/leaderboard`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-center gap-2 w-full py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-semibold border border-emerald-500/20 transition-all mt-4"
+                            >
+                              <span>App Leaderboard</span>
+                              <span>↗</span>
+                            </a>
+
+                            {/* Settle/Refund Button */}
+                            {contest.status === "TOSETTLE" && (
+                              <div className="flex flex-col gap-2 mt-2">
+                                <button
+                                  onClick={() =>
+                                    handleSettleContest(contest, "SETTLED")
+                                  }
+                                  className="flex items-center justify-center gap-2 w-full py-2 rounded-lg bg-blue-500/20 hover:bg-blue-600/30 text-blue-400 text-xs font-semibold border border-blue-500/30 transition-all shadow-lg shadow-blue-500/10"
+                                >
+                                  Approve and Settle Contest
+                                </button>
                               </div>
-                              <a
-                                onClick={(e) => e.stopPropagation()}
-                                href={`${APP_FRONTEND_URL}/match/${selectedMatchId}/contest/${contest.id}/leaderboard`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="ml-auto py-1 px-2.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] border border-emerald-500/20 transition-all flex items-center gap-1.5 font-semibold"
-                              >
-                                <span>App Link</span>
-                                <span>↗</span>
-                              </a>
+                            )}
+                            {contest.status === "TOREFUND" && (
+                              <div className="flex flex-col gap-2 mt-2">
+                                <button
+                                  onClick={() =>
+                                    handleSettleContest(contest, "REFUNDED")
+                                  }
+                                  className="flex items-center justify-center gap-2 w-full py-2 rounded-lg bg-red-500/20 hover:bg-red-600/30 text-red-400 text-xs font-semibold border border-red-500/30 transition-all shadow-lg shadow-red-500/10"
+                                >
+                                  Approve and Refund Contest
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Prize Pool / Price Sheet */}
+                          <div>
+                            <h3 className="text-sm font-semibold text-white mb-3">
+                              Prize Distribution
+                            </h3>
+                            {priceSheet.length > 0 ? (
+                              <div className="bg-white/3 border border-white/5 rounded-xl overflow-hidden">
+                                <table className="w-full text-xs text-left">
+                                  <thead className="bg-white/5 text-slate-500 uppercase text-[9px] tracking-wider">
+                                    <tr>
+                                      <th className="px-3 py-2">Rank</th>
+                                      <th className="px-3 py-2">Prize</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-white/5">
+                                    {priceSheet.map((item, idx) => (
+                                      <tr
+                                        key={idx}
+                                        className="hover:bg-white/5 transition-colors"
+                                      >
+                                        <td className="px-3 py-2 text-slate-300">
+                                          {item.rankFrom === item.rankTo
+                                            ? `Rank ${item.rankFrom}`
+                                            : `Rank ${item.rankFrom}-${item.rankTo}`}
+                                        </td>
+                                        <td className="px-3 py-2 font-semibold text-white">
+                                          ${item.price} {item.currency}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            ) : (
+                              <div className="bg-white/3 border border-dashed border-white/5 rounded-xl py-4 text-center text-slate-500 text-xs">
+                                No prize information available
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Leaderboard */}
+                          <div>
+                            <h3 className="text-sm font-semibold text-white mb-3 flex items-center justify-between">
+                              Leaderboard
+                              <span className="text-[10px] text-slate-500">
+                                {leaderboard.length} entries
+                              </span>
+                            </h3>
+                            {leaderboard.length > 0 ? (
+                              <div className="flex flex-col gap-2">
+                                {leaderboard.map((entry) => (
+                                  <div
+                                    key={entry.rank}
+                                    className="bg-black/20 border border-white/5 rounded-lg p-3 flex items-center gap-3"
+                                  >
+                                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-xs font-bold text-emerald-400 shrink-0">
+                                      #{entry.rank}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-xs font-semibold text-white truncate">
+                                        {entry.dreamTeamName}
+                                      </p>
+                                      <p className="text-[10px] text-slate-500 truncate">
+                                        {entry.authorName}
+                                      </p>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-xs font-bold text-white">
+                                        {entry.score}
+                                      </p>
+                                      <p className="text-[9px] text-slate-500">
+                                        Pts
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="bg-white/3 border border-dashed border-white/5 rounded-xl py-8 text-center text-slate-500 text-xs">
+                                No leaderboard entries yet
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Transactions */}
+                          <div>
+                            <h3 className="text-sm font-semibold text-white mb-3 flex items-center justify-between">
+                              Transactions
+                              <span className="text-[10px] text-slate-500">
+                                {contest.transactions?.length || 0} total
+                              </span>
+                            </h3>
+                            {(contest.transactions?.length || 0) > 0 ? (
+                              <div className="flex flex-col gap-3">
+                                {contest.transactions?.map((tx) => (
+                                  <div
+                                    key={tx.id}
+                                    className="bg-black/20 border border-white/5 rounded-lg p-3"
+                                  >
+                                    <div className="flex justify-between items-start mb-2">
+                                      <div className="flex flex-col gap-1">
+                                        <span
+                                          className={`text-[8px] font-bold px-1.5 py-0.5 rounded w-fit ${
+                                            tx.status === "PROCESSED"
+                                              ? "bg-emerald-500/10 text-emerald-400"
+                                              : tx.status === "FAILED"
+                                                ? "bg-red-500/10 text-red-500"
+                                                : "bg-blue-500/10 text-blue-400"
+                                          }`}
+                                        >
+                                          {tx.status}
+                                        </span>
+                                        {tx.amount !== undefined && (
+                                          <span className="text-xs font-bold text-white">
+                                            ${tx.amount}{" "}
+                                            {tx.currency ||
+                                              contest.entryPriceCurrency}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <span className="text-[9px] text-slate-500">
+                                        {new Date(
+                                          tx.createdAt,
+                                        ).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                    <div className="flex flex-col gap-2 mb-2">
+                                      <div>
+                                        <p className="text-xs text-white">
+                                          {tx.fromDescription}
+                                        </p>
+                                        <p
+                                          className="text-[8px] font-mono text-slate-500 truncate"
+                                          title={tx.fromWalletId}
+                                        >
+                                          Wallet: {tx.fromWalletId}
+                                        </p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs text-slate-300">
+                                          <span className="text-slate-500 text-[10px] mr-1">
+                                            To:
+                                          </span>
+                                          {tx.toDescription}
+                                        </p>
+                                        <p
+                                          className="text-[8px] font-mono text-slate-500 truncate"
+                                          title={tx.toWalletId}
+                                        >
+                                          Wallet: {tx.toWalletId}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <p className="mt-2 text-[8px] text-slate-600 font-mono truncate">
+                                      TxID: {tx.id}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="bg-white/3 border border-dashed border-white/5 rounded-xl py-8 text-center text-slate-500 text-xs">
+                                No transactions yet
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()
+                  ) : activeSideTab === "teams" ? (
+                    <div className="flex flex-col gap-6 w-full">
+                      {selectedMatchDetails.teams?.map((team) => (
+                        <div
+                          key={team.realTeamId}
+                          className="bg-[#101018] border border-white/5 rounded-xl p-4"
+                        >
+                          <div className="flex items-center gap-3 mb-4 border-b border-white/5 pb-3">
+                            {team.logoURL ? (
+                              <img
+                                src={team.logoURL}
+                                alt={team.teamName}
+                                className="w-8 h-8 rounded-full bg-white/10"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs">
+                                ?
+                              </div>
+                            )}
+                            <div>
+                              <h3 className="text-sm font-bold text-white">
+                                {team.teamName}{" "}
+                                <span className="text-slate-500 text-xs font-normal">
+                                  ({team.shortName})
+                                </span>
+                              </h3>
                             </div>
                           </div>
-                        );
-                      })}
+
+                          {/* Team Scorecards */}
+                          {team.scoreCard && Object.keys(team.scoreCard).length > 0 && (
+                            <div className="mb-4">
+                              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Team Score</h4>
+                              <div className="flex gap-2">
+                                {Object.values(team.scoreCard).map((inning) => (
+                                  <div key={inning.inning} className="flex-1 bg-white/5 border border-white/5 rounded-lg p-2">
+                                    <p className="text-[10px] text-slate-500 mb-1 font-semibold">Inning {inning.inning}</p>
+                                    <p className="text-sm font-mono font-bold text-white">
+                                      {inning.runs}/{inning.wickets} <span className="text-xs font-normal text-slate-400">({inning.overs} ov)</span>
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Team players */}
+                          <div className="flex flex-col gap-2">
+                            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 mt-1">
+                              Players
+                            </h4>
+                            {team.players?.map((player) => (
+                              <div
+                                key={player.playerProfileId}
+                                className="bg-white/3 border border-white/5 rounded-lg p-3"
+                              >
+                                <div className="flex justify-between items-center">
+                                  <div className="flex items-center gap-2">
+                                    {player.imageUrl ? (
+                                      <img
+                                        src={player.imageUrl}
+                                        alt={player.name}
+                                        className="w-6 h-6 rounded-full bg-white/10 shrink-0 object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-6 h-6 rounded-full bg-white/10 shrink-0 flex items-center justify-center text-[8px]">
+                                        ?
+                                      </div>
+                                    )}
+                                    <p className="text-xs font-semibold text-white">
+                                      {player.name}
+                                    </p>
+                                  </div>
+                                  <div className="flex gap-2 text-[9px] shrink-0">
+                                    <span className="bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded">
+                                      {player.playerRole}
+                                    </span>
+                                    <span className="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded">
+                                      {player.playerSecondRole}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Player Scorecards */}
+                                {player.scoreCard &&
+                                  Object.keys(player.scoreCard).length > 0 && (
+                                    <div className="mt-3 pt-3 border-t border-white/5">
+                                      {Object.values(player.scoreCard).map(
+                                        (inning) => (
+                                          <div
+                                            key={inning.inning}
+                                            className="mb-2 last:mb-0"
+                                          >
+                                            <p className="text-[10px] text-slate-500 mb-1 font-semibold">
+                                              Inning {inning.inning}
+                                            </p>
+                                            <div className="flex flex-wrap gap-1.5">
+                                              {Object.values(inning.items).map(
+                                                (item, idx) => (
+                                                  <div
+                                                    key={idx}
+                                                    className="bg-black/20 border border-white/5 rounded px-1.5 py-0.5 text-[9px] flex items-center gap-1"
+                                                  >
+                                                    <span className="text-slate-500">
+                                                      {item.scoreCardItemType}:
+                                                    </span>
+                                                    <span className="text-white font-mono">
+                                                      {item.value}
+                                                    </span>
+                                                  </div>
+                                                ),
+                                              )}
+                                            </div>
+                                          </div>
+                                        ),
+                                      )}
+                                    </div>
+                                  )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    selectedMatchDetails.contests.map((contest) => {
+                      // Calculate transaction counts derived from transactions array if not provided
+                      const txCounts = contest.transactionCounts || {
+                        submitted:
+                          contest.transactions?.filter(
+                            (t) => t.status === "SUBMITTED",
+                          ).length || 0,
+                        processed:
+                          contest.transactions?.filter(
+                            (t) => t.status === "PROCESSED",
+                          ).length || 0,
+                        failed:
+                          contest.transactions?.filter(
+                            (t) => t.status === "FAILED",
+                          ).length || 0,
+                      };
+
+                      return (
+                        <div
+                          key={contest.id}
+                          onClick={() => setSelectedContestId(contest.id)}
+                          className="bg-white/3 border border-white/5 rounded-xl p-4 hover:border-white/10 transition-all cursor-pointer group"
+                        >
+                          <div className="flex items-start justify-between gap-3 mb-3">
+                            <div>
+                              <p className="text-sm font-semibold text-white group-hover:text-emerald-400 transition-colors">
+                                {contest.type}
+                              </p>
+                              <p className="text-[10px] text-slate-500 mt-0.5">
+                                ID: {contest.id}
+                              </p>
+                            </div>
+                            <span
+                              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                                CONTEST_STATUS_COLORS[contest.status] ??
+                                "bg-slate-500/20 text-slate-400"
+                              }`}
+                            >
+                              {contest.status}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2 mb-4 text-xs">
+                            <div className="bg-black/20 rounded-lg px-2 py-1.5 border border-white/5">
+                              <p className="text-[9px] text-slate-500 uppercase tracking-wider">
+                                Price
+                              </p>
+                              <p className="text-xs font-semibold text-white">
+                                ${contest.entryPrice}
+                              </p>
+                            </div>
+                            <div className="bg-black/20 rounded-lg px-2 py-1.5 border border-white/5">
+                              <p className="text-[9px] text-slate-500 uppercase tracking-wider">
+                                Bal
+                              </p>
+                              <p className="text-xs font-bold text-emerald-400">
+                                ${contest.walletBalance || 0}
+                              </p>
+                            </div>
+                            <div className="bg-black/20 rounded-lg px-2 py-1.5 border border-white/5">
+                              <p className="text-[9px] text-slate-500 uppercase tracking-wider">
+                                Teams
+                              </p>
+                              <p className="text-xs font-semibold text-white">
+                                {contest.submittedDreamTeamCount}/
+                                {contest.teamsTotalLimit}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2 mb-4">
+                            <div className="bg-blue-500/5 rounded-lg px-2 py-1.5 border border-blue-500/10">
+                              <p className="text-[8px] text-blue-500 uppercase tracking-wider">
+                                Subm
+                              </p>
+                              <p className="text-[11px] font-semibold text-blue-400">
+                                {txCounts.submitted}
+                              </p>
+                            </div>
+                            <div className="bg-emerald-500/5 rounded-lg px-2 py-1.5 border border-emerald-500/10">
+                              <p className="text-[8px] text-emerald-500 uppercase tracking-wider">
+                                Proc
+                              </p>
+                              <p className="text-[11px] font-semibold text-emerald-400">
+                                {txCounts.processed}
+                              </p>
+                            </div>
+                            <div className="bg-red-500/5 rounded-lg px-2 py-1.5 border border-red-500/10">
+                              <p className="text-[8px] text-red-500 uppercase tracking-wider">
+                                Fail
+                              </p>
+                              <p className="text-[11px] font-semibold text-red-400">
+                                {txCounts.failed}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <div className="text-[10px] text-slate-500 flex items-center gap-1">
+                              <span>View Details</span>
+                              <span className="group-hover:translate-x-0.5 transition-transform">
+                                →
+                              </span>
+                            </div>
+                            <a
+                              onClick={(e) => e.stopPropagation()}
+                              href={`${APP_FRONTEND_URL}/match/${selectedMatchId}/contest/${contest.id}/leaderboard`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ml-auto py-1 px-2.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] border border-emerald-500/20 transition-all flex items-center gap-1.5 font-semibold"
+                            >
+                              <span>App Link</span>
+                              <span>↗</span>
+                            </a>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-20 text-slate-500 text-sm">

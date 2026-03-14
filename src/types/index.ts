@@ -155,8 +155,63 @@ export interface Contest {
   prizePool?: number;
   transactionCounts?: TransactionCounts;
   transactions?: Transaction[];
+  walletId?: string;
+  walletBalance?: number;
   leaderBoard?: Record<string, LeaderBoardEntry>;
   priceSheet?: Record<string, PriceSheetItem>;
+}
+
+export type PlayerRole = "CAPTAIN" | "VICECAPTAIN" | "MEMBER";
+
+export type PlayerSecondRole =
+  | "BOWLER"
+  | "BATTER"
+  | "WICKETKEEPER"
+  | "ALLROUNDER";
+
+export interface ScoreCardItem {
+  scoreCardItemType: string;
+  valueType: string;
+  value: number | string;
+}
+
+export interface ScoreCardInning {
+  inning: number;
+  items: Record<string, ScoreCardItem>;
+}
+
+export interface RealTeamPlayer {
+  matchId: string;
+  realTeamId: string;
+  playerProfileId: string;
+  name: string;
+  playerSecondRole: PlayerSecondRole;
+  playerRole: PlayerRole;
+  price: number;
+  scoreCard: Record<number, ScoreCardInning>;
+  espnId?: string;
+  imageUrl?: string;
+}
+
+export interface RealTeam {
+  matchId: string;
+  realTeamId: string;
+  teamName: string;
+  shortName?: string;
+  logoURL: string;
+  scoreCard?: Record<number, InningScore>;
+}
+
+export interface RealTeamWithRealTeamPlayers extends RealTeam {
+  players: RealTeamPlayer[];
+}
+
+export interface MatchWithRealTeamsAndContests extends Omit<
+  MatchWithContestSummary,
+  "contests"
+> {
+  teams: RealTeamWithRealTeamPlayers[];
+  contests: Contest[];
 }
 
 export interface MatchWithContestsResponse extends MatchWithContestSummary {
