@@ -480,6 +480,49 @@ export default function MatchesPage() {
                       </p>
                     </div>
 
+                    {/* Match Sources */}
+                    {selectedMatchDetails && (
+                      <div className="flex flex-wrap gap-3">
+                        {Object.values(selectedMatchDetails.matchSource).map((source, idx) => (
+                          <div key={idx} className="flex gap-3">
+                            {source.liveScoreUrl && (
+                              <a
+                                href={source.liveScoreUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] font-medium text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors"
+                              >
+                                <span>Live Score</span>
+                                <span className="text-[8px]">↗</span>
+                              </a>
+                            )}
+                            {source.scoreCardUrl && (
+                              <a
+                                href={source.scoreCardUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] font-medium text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors"
+                              >
+                                <span>Scorecard</span>
+                                <span className="text-[8px]">↗</span>
+                              </a>
+                            )}
+                            {source.matchPageUrl && (
+                              <a
+                                href={source.matchPageUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] font-medium text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors"
+                              >
+                                <span>ESPN Page</span>
+                                <span className="text-[8px]">↗</span>
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
                     {/* Tabs */}
                     {selectedMatchDetails && (
                       <div className="flex gap-2">
