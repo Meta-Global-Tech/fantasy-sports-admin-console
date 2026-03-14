@@ -78,6 +78,7 @@ export interface Transaction {
   status: TransactionStatus;
   userId: string;
   withdrawalToBeProcessed: boolean;
+  type?: string;
 }
 
 export interface PriceSheetItem {

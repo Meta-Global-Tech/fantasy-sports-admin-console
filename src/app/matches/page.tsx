@@ -591,6 +591,13 @@ export default function MatchesPage() {
                           )
                         : [];
 
+                      const contestFeeTransactions = (
+                        contest.transactions || []
+                      ).filter((tx) => tx.type === "CONTEST_FEE");
+                      const otherTransactions = (
+                        contest.transactions || []
+                      ).filter((tx) => tx.type !== "CONTEST_FEE");
+
                       return (
                         <div className="flex flex-col gap-6">
                           {/* Summary Info */}
@@ -796,16 +803,16 @@ export default function MatchesPage() {
                           </div>
 
                           {/* Transactions */}
-                          <div>
-                            <h3 className="text-sm font-semibold text-white mb-3 flex items-center justify-between">
-                              Transactions
-                              <span className="text-[10px] text-slate-500">
-                                {contest.transactions?.length || 0} total
-                              </span>
-                            </h3>
-                            {(contest.transactions?.length || 0) > 0 ? (
+                          {contestFeeTransactions.length > 0 && (
+                            <div>
+                              <h3 className="text-sm font-semibold text-white mb-3 flex items-center justify-between">
+                                Contest Fees
+                                <span className="text-[10px] text-slate-500">
+                                  {contestFeeTransactions.length} payments
+                                </span>
+                              </h3>
                               <div className="flex flex-col gap-3">
-                                {contest.transactions?.map((tx) => (
+                                {contestFeeTransactions.map((tx) => (
                                   <div
                                     key={tx.id}
                                     className="bg-black/20 border border-white/5 rounded-lg p-3"
@@ -870,12 +877,94 @@ export default function MatchesPage() {
                                   </div>
                                 ))}
                               </div>
-                            ) : (
-                              <div className="bg-white/3 border border-dashed border-white/5 rounded-xl py-8 text-center text-slate-500 text-xs">
-                                No transactions yet
-                              </div>
-                            )}
-                          </div>
+                            </div>
+                          )}
+
+                          {(otherTransactions.length > 0 ||
+                            contestFeeTransactions.length === 0) && (
+                            <div>
+                              <h3 className="text-sm font-semibold text-white mb-3 flex items-center justify-between">
+                                {contestFeeTransactions.length > 0
+                                  ? "Other Transactions"
+                                  : "Transactions"}
+                                <span className="text-[10px] text-slate-500">
+                                  {otherTransactions.length} total
+                                </span>
+                              </h3>
+                              {otherTransactions.length > 0 ? (
+                                <div className="flex flex-col gap-3">
+                                  {otherTransactions.map((tx) => (
+                                    <div
+                                      key={tx.id}
+                                      className="bg-black/20 border border-white/5 rounded-lg p-3"
+                                    >
+                                      <div className="flex justify-between items-start mb-2">
+                                        <div className="flex flex-col gap-1">
+                                          <span
+                                            className={`text-[8px] font-bold px-1.5 py-0.5 rounded w-fit ${
+                                              tx.status === "PROCESSED"
+                                                ? "bg-emerald-500/10 text-emerald-400"
+                                                : tx.status === "FAILED"
+                                                  ? "bg-red-500/10 text-red-500"
+                                                  : "bg-blue-500/10 text-blue-400"
+                                            }`}
+                                          >
+                                            {tx.status}
+                                          </span>
+                                          {tx.amount !== undefined && (
+                                            <span className="text-xs font-bold text-white">
+                                              ${tx.amount}{" "}
+                                              {tx.currency ||
+                                                contest.entryPriceCurrency}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <span className="text-[9px] text-slate-500">
+                                          {new Date(
+                                            tx.createdAt,
+                                          ).toLocaleDateString()}
+                                        </span>
+                                      </div>
+                                      <div className="flex flex-col gap-2 mb-2">
+                                        <div>
+                                          <p className="text-xs text-white">
+                                            {tx.fromDescription}
+                                          </p>
+                                          <p
+                                            className="text-[8px] font-mono text-slate-500 truncate"
+                                            title={tx.fromWalletId}
+                                          >
+                                            Wallet: {tx.fromWalletId}
+                                          </p>
+                                        </div>
+                                        <div>
+                                          <p className="text-xs text-slate-300">
+                                            <span className="text-slate-500 text-[10px] mr-1">
+                                              To:
+                                            </span>
+                                            {tx.toDescription}
+                                          </p>
+                                          <p
+                                            className="text-[8px] font-mono text-slate-500 truncate"
+                                            title={tx.toWalletId}
+                                          >
+                                            Wallet: {tx.toWalletId}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <p className="mt-2 text-[8px] text-slate-600 font-mono truncate">
+                                        TxID: {tx.id}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="bg-white/3 border border-dashed border-white/5 rounded-xl py-8 text-center text-slate-500 text-xs">
+                                  No transactions yet
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })()
