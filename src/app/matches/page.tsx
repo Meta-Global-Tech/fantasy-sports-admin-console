@@ -11,11 +11,13 @@ import type {
   MatchWithRealTeamsAndContests,
   ContestType,
   Transaction,
+  UpdateRealTeamPlayerPriceRequest,
 } from "@/types";
 import { MatchCard } from "@/components/MatchCard";
 import { CreateContestForm } from "@/components/CreateContestForm";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { CONTEST_STATUS_COLORS } from "@/lib/utils";
+import { adminApi } from "@/lib/api";
 
 // ── Components ───────────────────────────────────────────────────────────────
 
@@ -171,6 +173,8 @@ export default function MatchesPage() {
     null,
   );
   const [isCreatingContest, setIsCreatingContest] = useState(false);
+  const [updatingPricePlayerId, setUpdatingPricePlayerId] = useState<string | null>(null);
+  const [pendingPlayerPrices, setPendingPlayerPrices] = useState<Record<string, string>>({});
 
   // Modal state
   const [confirmModal, setConfirmModal] = useState<{
@@ -287,6 +291,43 @@ export default function MatchesPage() {
     if (!selectedMatchId) return;
     await handleMatchClick(selectedMatchId);
     setIsCreatingContest(false);
+  };
+
+  const handleUpdatePlayerPrice = async (
+    matchId: string,
+    realTeamId: string,
+    playerProfileId: string,
+  ) => {
+    const priceStr = pendingPlayerPrices[playerProfileId];
+    const price = parseFloat(priceStr);
+    if (isNaN(price)) {
+      alert("Please enter a valid price");
+      return;
+    }
+
+    try {
+      setUpdatingPricePlayerId(playerProfileId);
+      await adminApi.updateRealTeamPlayerPrice({
+        matchId,
+        realTeamIdPlayerProfileId: `${realTeamId}#${playerProfileId}`,
+        price,
+      });
+
+      // Refresh match details to show updated price
+      const details = await matchesApi.getAllContestsByMatchId(matchId);
+      setSelectedMatchDetails(details);
+      
+      setUpdatingPricePlayerId(null);
+      setPendingPlayerPrices(prev => {
+        const next = { ...prev };
+        delete next[playerProfileId];
+        return next;
+      });
+    } catch (err: any) {
+      console.error("Failed to update player price", err);
+      alert(err.response?.data?.message || "Failed to update player price");
+      setUpdatingPricePlayerId(null);
+    }
   };
 
   // Fetch when dates change
@@ -1047,19 +1088,48 @@ export default function MatchesPage() {
                                         ?
                                       </div>
                                     )}
-                                    <p className="text-xs font-semibold text-white">
-                                      {player.name}
-                                    </p>
+                                    <div>
+                                      <p className="text-xs font-semibold text-white">
+                                        {player.name}
+                                      </p>
+                                      <p className="text-[10px] font-bold text-emerald-400">
+                                        ${player.price}
+                                      </p>
+                                    </div>
                                   </div>
-                                  <div className="flex gap-2 text-[9px] shrink-0">
-                                    <span className="bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded">
-                                      {player.playerRole}
-                                    </span>
-                                    <span className="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded">
-                                      {player.playerSecondRole}
-                                    </span>
+                                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                    <div className="flex gap-2 text-[9px]">
+                                      <span className="bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded">
+                                        {player.playerRole}
+                                      </span>
+                                      <span className="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded">
+                                        {player.playerSecondRole}
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
+
+                                {/* Update Price - Only for PREMATCH or SETTINGUP matches */}
+                                {(selectedMatchDetails.status === "PREMATCH" || selectedMatchDetails.status === "SETTINGUP") && (
+                                  <div className="mt-3 pt-3 border-t border-white/5 flex items-center gap-2">
+                                    <input
+                                      type="number"
+                                      placeholder="Price"
+                                      defaultValue={player.price}
+                                      onChange={(e) => {
+                                        setPendingPlayerPrices(prev => ({ ...prev, [player.playerProfileId]: e.target.value }));
+                                      }}
+                                      className="w-16 bg-black/20 border border-white/10 rounded px-1.5 py-1 text-[10px] focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+                                    />
+                                    <button
+                                      onClick={() => handleUpdatePlayerPrice(selectedMatchDetails.id, team.realTeamId, player.playerProfileId)}
+                                      disabled={updatingPricePlayerId === player.playerProfileId}
+                                      className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded border border-emerald-500/20 transition-all disabled:opacity-50"
+                                    >
+                                      {updatingPricePlayerId === player.playerProfileId ? "..." : "Set Price"}
+                                    </button>
+                                  </div>
+                                )}
 
                                 {/* Player Scorecards */}
                                 {player.scoreCard &&

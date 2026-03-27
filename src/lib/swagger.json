@@ -2953,6 +2953,69 @@
         },
         "type": "object",
         "additionalProperties": false
+      },
+      "PlayerProfile": {
+        "properties": {
+          "playerProfileId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "normalizedName": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "number",
+            "format": "double"
+          },
+          "country": {
+            "type": "string"
+          },
+          "defaultPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "defaultPlayerSecondRole": {
+            "$ref": "#/components/schemas/PlayerSecondRole"
+          },
+          "espnId": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          }
+        },
+        "required": ["playerProfileId", "name", "normalizedName", "createdAt"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "PaginatedPlayerProfileef66": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PlayerProfile"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number",
+                "format": "double"
+              }
+            ]
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        },
+        "required": ["items", "hasMore"],
+        "type": "object",
+        "additionalProperties": false
       }
     },
     "securitySchemes": {
@@ -4797,6 +4860,135 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/LogoutRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/players": {
+      "get": {
+        "operationId": "GetAllPlayerProfiles",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedPlayerProfileef66"
+                }
+              }
+            }
+          }
+        },
+        "description": "List all player profiles",
+        "tags": ["Admin"],
+        "security": [
+          {
+            "jwt": ["ADMIN"]
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "format": "double",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/admin/players/default-price": {
+      "patch": {
+        "operationId": "UpdatePlayerProfileDefaultPrice",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "description": "Update player profile defaultPrice",
+        "tags": ["Admin"],
+        "security": [
+          {
+            "jwt": ["ADMIN"]
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "description": "The update details",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "updateUpcomingMatches": {
+                    "type": "boolean"
+                  },
+                  "defaultPrice": {
+                    "type": "number",
+                    "format": "double"
+                  },
+                  "playerProfileId": {
+                    "type": "string"
+                  }
+                },
+                "required": ["defaultPrice", "playerProfileId"],
+                "type": "object",
+                "description": "The update details"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/matches/player-price": {
+      "patch": {
+        "operationId": "UpdateRealTeamPlayerPrice",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "description": "Update RealTeamPlayer price for a specific match",
+        "tags": ["Admin"],
+        "security": [
+          {
+            "jwt": ["ADMIN"]
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "description": "The update details including matchId and realTeamId#playerProfileId",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "price": {
+                    "type": "number",
+                    "format": "double"
+                  },
+                  "realTeamIdPlayerProfileId": {
+                    "type": "string"
+                  },
+                  "matchId": {
+                    "type": "string"
+                  }
+                },
+                "required": ["price", "realTeamIdPlayerProfileId", "matchId"],
+                "type": "object",
+                "description": "The update details including matchId and realTeamId#playerProfileId"
               }
             }
           }

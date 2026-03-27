@@ -247,6 +247,18 @@ export interface GetMatchesByDateRangeParams {
   pageSize?: number;
   cursor?: number;
 }
+
+export interface GetPlayerProfilesParams {
+  pageSize?: number;
+  cursor?: string;
+}
+
+export interface PaginatedPlayerProfilesResponse {
+  items: PlayerProfile[];
+  nextCursor?: string | number;
+  hasMore: boolean;
+}
+
 export interface SettleContestRequest {
   transactions: {
     amount: number;
@@ -260,5 +272,29 @@ export interface SettleContestRequest {
 
 export interface CreateContestRequest {
   type: ContestType;
+  matchId: string;
+}
+
+export interface PlayerProfile {
+  playerProfileId: string;
+  name: string;
+  normalizedName: string;
+  createdAt: number;
+  country?: string;
+  defaultPrice?: number;
+  defaultPlayerSecondRole?: PlayerSecondRole;
+  espnId?: string;
+  imageUrl?: string;
+}
+
+export interface UpdatePlayerProfileDefaultPriceRequest {
+  updateUpcomingMatches?: boolean;
+  defaultPrice: number;
+  playerProfileId: string;
+}
+
+export interface UpdateRealTeamPlayerPriceRequest {
+  price: number;
+  realTeamIdPlayerProfileId: string;
   matchId: string;
 }

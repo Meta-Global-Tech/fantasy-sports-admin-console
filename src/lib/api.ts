@@ -8,6 +8,11 @@ import type {
   LoginResponse,
   SettleContestRequest,
   CreateContestRequest,
+  PlayerProfile,
+  PaginatedPlayerProfilesResponse,
+  GetPlayerProfilesParams,
+  UpdatePlayerProfileDefaultPriceRequest,
+  UpdateRealTeamPlayerPriceRequest,
 } from "@/types";
 
 // ── Token store ─────────────────────────────────────────────────────────────
@@ -109,5 +114,27 @@ export const contestsApi = {
   },
   async createContest(data: CreateContestRequest): Promise<void> {
     await api.post("/contests/create", data);
+  },
+};
+
+export const adminApi = {
+  async getAllPlayerProfiles(
+    params?: GetPlayerProfilesParams,
+  ): Promise<PaginatedPlayerProfilesResponse> {
+    const response = await api.get<PaginatedPlayerProfilesResponse>(
+      "/admin/players",
+      { params },
+    );
+    return response.data;
+  },
+  async updatePlayerProfileDefaultPrice(
+    data: UpdatePlayerProfileDefaultPriceRequest,
+  ): Promise<void> {
+    await api.patch("/admin/players/default-price", data);
+  },
+  async updateRealTeamPlayerPrice(
+    data: UpdateRealTeamPlayerPriceRequest,
+  ): Promise<void> {
+    await api.patch("/admin/matches/player-price", data);
   },
 };
