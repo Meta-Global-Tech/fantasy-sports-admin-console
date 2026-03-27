@@ -123,7 +123,22 @@
         "type": "object",
         "additionalProperties": false
       },
-      "UpdateWithdrawalAccountsRequest": {
+      "RequestUpdateWithdrawalAccountsResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the OTP was sent successfully"
+          },
+          "message": {
+            "type": "string",
+            "description": "User-facing message"
+          }
+        },
+        "required": ["success", "message"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "RequestUpdateWithdrawalAccountsRequest": {
         "properties": {
           "wiseEmail": {
             "type": "string",
@@ -134,6 +149,17 @@
             "description": "Binance account email address"
           }
         },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "UpdateWithdrawalAccountsRequest": {
+        "properties": {
+          "otpCode": {
+            "type": "string",
+            "description": "OTP code sent to the user's email"
+          }
+        },
+        "required": ["otpCode"],
         "type": "object",
         "additionalProperties": false
       },
@@ -213,6 +239,23 @@
         "enum": ["SUBMITTED", "PROCESSED", "FAILED"],
         "type": "string"
       },
+      "TransactionType": {
+        "enum": [
+          "DEPOSIT",
+          "WITHDRAWAL",
+          "CONTEST_PAYOUT",
+          "CONTEST_REFUND",
+          "CONTEST_FEE",
+          "HOUSE_MARGIN"
+        ],
+        "type": "string"
+      },
+      "Recordstringany": {
+        "properties": {},
+        "additionalProperties": {},
+        "type": "object",
+        "description": "Construct a type with a set of properties K of type T"
+      },
       "Transaction": {
         "properties": {
           "id": {
@@ -245,14 +288,25 @@
             "type": "number",
             "format": "double"
           },
-          "withdrawalToBeProcessed": {
-            "type": "boolean"
-          },
           "userId": {
             "type": "string"
           },
           "type": {
-            "type": "string"
+            "$ref": "#/components/schemas/TransactionType"
+          },
+          "fromWalletBalance": {
+            "type": "number",
+            "format": "double"
+          },
+          "toWalletBalance": {
+            "type": "number",
+            "format": "double"
+          },
+          "details": {
+            "$ref": "#/components/schemas/Recordstringany"
+          },
+          "reconciled": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -265,7 +319,9 @@
           "toDescription",
           "updatedAt",
           "amount",
-          "withdrawalToBeProcessed"
+          "type",
+          "fromWalletBalance",
+          "toWalletBalance"
         ],
         "type": "object",
         "additionalProperties": false
@@ -420,6 +476,59 @@
           }
         },
         "required": ["amount"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "SupportTicketMetadata": {
+        "properties": {
+          "platform": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "screen": {
+            "type": "string"
+          },
+          "user": {
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": ["name", "email", "id"],
+            "type": "object"
+          }
+        },
+        "required": ["platform", "version", "screen", "user"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "SupportTicketInput": {
+        "properties": {
+          "details": {
+            "type": "string"
+          },
+          "screenshot": {
+            "type": "string"
+          },
+          "attachScreenshot": {
+            "type": "boolean"
+          },
+          "type": {
+            "type": "string"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/SupportTicketMetadata"
+          }
+        },
+        "required": ["details", "attachScreenshot", "metadata"],
         "type": "object",
         "additionalProperties": false
       },
@@ -2313,14 +2422,34 @@
       },
       "Banner": {
         "properties": {
-          "id": {
+          "position": {
+            "type": "number",
+            "format": "double"
+          },
+          "contentUrl": {
             "type": "string"
           },
-          "imageUrl": {
+          "contentType": {
             "type": "string"
+          },
+          "actionType": {
+            "type": "string"
+          },
+          "actionUrl": {
+            "type": "string"
+          },
+          "urlExternal": {
+            "type": "boolean"
           }
         },
-        "required": ["id", "imageUrl"],
+        "required": [
+          "position",
+          "contentUrl",
+          "contentType",
+          "actionType",
+          "actionUrl",
+          "urlExternal"
+        ],
         "type": "object",
         "additionalProperties": false
       },
@@ -2415,12 +2544,6 @@
         "required": ["iban"],
         "type": "object",
         "additionalProperties": false
-      },
-      "Recordstringany": {
-        "properties": {},
-        "additionalProperties": {},
-        "type": "object",
-        "description": "Construct a type with a set of properties K of type T"
       },
       "BankAccountDetails": {
         "anyOf": [
@@ -2922,7 +3045,7 @@
             }
           }
         },
-        "description": "Set or update the user's withdrawal account emails (Wise and/or Binance)",
+        "description": "Verify OTP and update the user's withdrawal account emails (Wise and/or Binance).\nMust call POST /withdrawals/accounts/request-update first to receive an OTP.",
         "tags": ["Withdrawals"],
         "security": [
           {
@@ -2936,6 +3059,41 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateWithdrawalAccountsRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/withdrawals/accounts/request-update": {
+      "post": {
+        "operationId": "RequestUpdateWithdrawalAccounts",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestUpdateWithdrawalAccountsResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Request an OTP to update withdrawal account emails.\nSends a 6-digit verification code to the user's registered email.\nThe code is valid for 10 minutes.",
+        "tags": ["Withdrawals"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestUpdateWithdrawalAccountsRequest"
               }
             }
           }
@@ -3173,6 +3331,50 @@
           "content": {
             "application/json": {
               "schema": {}
+            }
+          }
+        }
+      }
+    },
+    "/support/ticket": {
+      "post": {
+        "operationId": "CreateTicket",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["message", "success"],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "description": "Create a support ticket in HubSpot",
+        "tags": ["Support"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupportTicketInput"
+              }
             }
           }
         }
@@ -3985,10 +4187,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/Contest"
-                  },
-                  "type": "array"
+                  "$ref": "#/components/schemas/MatchWithRealTeamsAndContests"
                 }
               }
             }
@@ -4051,7 +4250,7 @@
                           "type": "string"
                         }
                       },
-                      "required": ["amount", "userId", "transactionId"],
+                      "required": ["amount", "transactionId"],
                       "type": "object"
                     },
                     "type": "array"
@@ -4069,6 +4268,45 @@
                 "required": ["transactions", "status", "contestId", "matchId"],
                 "type": "object",
                 "description": "The settlement details"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/contests/create": {
+      "post": {
+        "operationId": "CreateContestByType",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "description": "Create a contest for a match by only providing the matchId and contestType",
+        "tags": ["Contests"],
+        "security": [
+          {
+            "jwt": ["ADMIN"]
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "description": "Match ID and contest type",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "type": {
+                    "$ref": "#/components/schemas/ContestType"
+                  },
+                  "matchId": {
+                    "type": "string"
+                  }
+                },
+                "required": ["type", "matchId"],
+                "type": "object",
+                "description": "Match ID and contest type"
               }
             }
           }
@@ -4093,7 +4331,7 @@
             }
           }
         },
-        "description": "Get all available banners\nReturns array of banner objects with id and imageUrl",
+        "description": "Get all available banners\nReturns array of banner objects",
         "tags": ["Banners"],
         "security": [],
         "parameters": []

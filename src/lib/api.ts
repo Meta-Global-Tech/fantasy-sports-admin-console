@@ -7,6 +7,7 @@ import type {
   LoginRequest,
   LoginResponse,
   SettleContestRequest,
+  CreateContestRequest,
 } from "@/types";
 
 // ── Token store ─────────────────────────────────────────────────────────────
@@ -105,5 +106,8 @@ export const matchesApi = {
 export const contestsApi = {
   async settleContest(data: SettleContestRequest): Promise<void> {
     await api.post("/contests/settle", data);
+  },
+  async createContest(data: CreateContestRequest): Promise<void> {
+    await api.post("/contests/create", data);
   },
 };

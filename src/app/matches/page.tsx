@@ -9,8 +9,11 @@ import type {
   ContestStatus,
   SettleContestRequest,
   MatchWithRealTeamsAndContests,
+  ContestType,
+  Transaction,
 } from "@/types";
 import { MatchCard } from "@/components/MatchCard";
+import { CreateContestForm } from "@/components/CreateContestForm";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { CONTEST_STATUS_COLORS } from "@/lib/utils";
 
@@ -167,6 +170,7 @@ export default function MatchesPage() {
   const [selectedContestId, setSelectedContestId] = useState<string | null>(
     null,
   );
+  const [isCreatingContest, setIsCreatingContest] = useState(false);
 
   // Modal state
   const [confirmModal, setConfirmModal] = useState<{
@@ -277,6 +281,12 @@ export default function MatchesPage() {
         }
       },
     });
+  };
+
+  const handleContestCreated = async () => {
+    if (!selectedMatchId) return;
+    await handleMatchClick(selectedMatchId);
+    setIsCreatingContest(false);
   };
 
   // Fetch when dates change
@@ -1093,20 +1103,40 @@ export default function MatchesPage() {
                       ))}
                     </div>
                   ) : (
-                    selectedMatchDetails.contests.map((contest) => {
+                    <div className="flex flex-col gap-4">
+                      {/* Create Contest Button/Form */}
+                      {!isCreatingContest ? (
+                        <button
+                          onClick={() => setIsCreatingContest(true)}
+                          className="w-full py-3 rounded-xl border border-dashed border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-400 text-xs font-bold transition-all flex items-center justify-center gap-2 mb-2"
+                        >
+                          <span className="text-lg">+</span>
+                          Create New Contest
+                        </button>
+                      ) : (
+                        <div className="mb-4">
+                          <CreateContestForm
+                            matchId={selectedMatchId!}
+                            onSuccess={handleContestCreated}
+                            onCancel={() => setIsCreatingContest(false)}
+                          />
+                        </div>
+                      )}
+
+                      {selectedMatchDetails?.contests.map((contest: Contest) => {
                       // Calculate transaction counts derived from transactions array if not provided
                       const txCounts = contest.transactionCounts || {
                         submitted:
                           contest.transactions?.filter(
-                            (t) => t.status === "SUBMITTED",
+                            (t: Transaction) => t.status === "SUBMITTED",
                           ).length || 0,
                         processed:
                           contest.transactions?.filter(
-                            (t) => t.status === "PROCESSED",
+                            (t: Transaction) => t.status === "PROCESSED",
                           ).length || 0,
                         failed:
                           contest.transactions?.filter(
-                            (t) => t.status === "FAILED",
+                            (t: Transaction) => t.status === "FAILED",
                           ).length || 0,
                       };
 
@@ -1127,8 +1157,9 @@ export default function MatchesPage() {
                             </div>
                             <span
                               className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                                CONTEST_STATUS_COLORS[contest.status] ??
-                                "bg-slate-500/20 text-slate-400"
+                                (CONTEST_STATUS_COLORS as Record<string, string>)[
+                                  contest.status
+                                ] ?? "bg-slate-500/20 text-slate-400"
                               }`}
                             >
                               {contest.status}
@@ -1210,8 +1241,9 @@ export default function MatchesPage() {
                           </div>
                         </div>
                       );
-                    })
-                  )}
+                    })}
+                  </div>
+                )}
                 </div>
               ) : (
                 <div className="text-center py-20 text-slate-500 text-sm">

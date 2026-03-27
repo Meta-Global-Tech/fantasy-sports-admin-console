@@ -257,3 +257,8 @@ export interface SettleContestRequest {
   contestId: string;
   matchId: string;
 }
+
+export interface CreateContestRequest {
+  type: ContestType;
+  matchId: string;
+}
