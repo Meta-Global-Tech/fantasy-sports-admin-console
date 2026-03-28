@@ -12,6 +12,7 @@ import type {
   ContestType,
   Transaction,
   UpdateRealTeamPlayerPriceRequest,
+  AutoFinalizeMatch,
 } from "@/types";
 import { MatchCard } from "@/components/MatchCard";
 import { CreateContestForm } from "@/components/CreateContestForm";
@@ -155,11 +156,13 @@ export default function MatchesPage() {
   const [transactionStatusFilter, setTransactionStatusFilter] = useState<
     "submitted" | "processed" | "failed" | "ALL"
   >("ALL");
+  const [showAutoFinalizeOnly, setShowAutoFinalizeOnly] = useState(false);
   const [matches, setMatches] = useState<MatchWithContestSummary[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [nextCursor, setNextCursor] = useState<number | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoFinalizeMatches, setAutoFinalizeMatches] = useState<AutoFinalizeMatch[]>([]);
 
   // Selection state
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
@@ -220,6 +223,15 @@ export default function MatchesPage() {
     },
     [fromDate, toDate],
   );
+
+  const fetchAutoFinalizeList = useCallback(async () => {
+    try {
+      const list = await adminApi.getAutoFinalizeMatchList();
+      setAutoFinalizeMatches(list);
+    } catch (err) {
+      console.error("Failed to fetch auto-finalize list", err);
+    }
+  }, []);
 
   const handleMatchClick = async (matchId: string) => {
     setSelectedMatchId(matchId);
@@ -363,6 +375,7 @@ export default function MatchesPage() {
       setLoadingDetails(true);
       await adminApi.addMatchToAutoFinalizeList({ matchId: selectedMatchId });
       alert("Match added to auto-finalize list");
+      await fetchAutoFinalizeList();
       // Refresh details
       await handleMatchClick(selectedMatchId);
     } catch (err: any) {
@@ -373,11 +386,30 @@ export default function MatchesPage() {
     }
   };
 
+  const handleRemoveMatchFromAutoFinalize = async () => {
+    if (!selectedMatchId) return;
+
+    try {
+      setLoadingDetails(true);
+      await adminApi.removeMatchFromAutoFinalizeList({ matchId: selectedMatchId });
+      alert("Match removed from auto-finalize list");
+      await fetchAutoFinalizeList();
+      // Refresh details
+      await handleMatchClick(selectedMatchId);
+    } catch (err: any) {
+      console.error("Failed to remove from auto-finalize", err);
+      alert(err.response?.data?.message || "Failed to remove from auto-finalize");
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
   // Fetch when dates change
   useEffect(() => {
     setNextCursor(undefined);
     fetchMatches();
-  }, [fetchMatches]);
+    fetchAutoFinalizeList();
+  }, [fetchMatches, fetchAutoFinalizeList]);
 
   // Filter client-side by status and transaction counts
   const filteredMatches = matches.filter((m) => {
@@ -394,6 +426,13 @@ export default function MatchesPage() {
         return count > 0;
       });
       if (!hasCount) return false;
+    }
+
+    // 3. Auto-finalize Filter
+    if (showAutoFinalizeOnly) {
+      if (!autoFinalizeMatches.some(af => af.matchId === m.id)) {
+        return false;
+      }
     }
 
     return true;
@@ -448,6 +487,21 @@ export default function MatchesPage() {
                 )}
               </button>
             ))}
+            <button
+              onClick={() => {
+                setShowAutoFinalizeOnly(!showAutoFinalizeOnly);
+              }}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                showAutoFinalizeOnly
+                  ? "bg-purple-500/20 text-purple-400 border border-purple-500/30 shadow-[0_0_10px_-2px_rgba(192,132,252,0.3)]"
+                  : "text-slate-500 hover:text-slate-300 border border-transparent hover:border-white/10"
+              }`}
+            >
+              Auto-Finalizing
+              <span className="ml-1.5 text-[10px] opacity-60">
+                {autoFinalizeMatches.length}
+              </span>
+            </button>
           </div>
 
           {/* Transaction filter */}
@@ -516,6 +570,7 @@ export default function MatchesPage() {
                   match={match}
                   onClick={handleMatchClick}
                   isSelected={selectedMatchId === match.id}
+                  isAutoFinalizeEnabled={autoFinalizeMatches.some(af => af.matchId === match.id)}
                 />
               ))}
             </div>
@@ -653,12 +708,21 @@ export default function MatchesPage() {
                               Finalize Match
                             </button>
                           )}
-                          <button
-                            onClick={handleAddMatchToAutoFinalize}
-                            className="flex-1 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
-                          >
-                            Auto-Finalize
-                          </button>
+                          {autoFinalizeMatches.some(af => af.matchId === selectedMatchId) ? (
+                            <button
+                              onClick={handleRemoveMatchFromAutoFinalize}
+                              className="flex-1 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-slate-500/10 hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-white/5 hover:border-red-500/20 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
+                            >
+                              Disable Auto-Finalize
+                            </button>
+                          ) : (
+                            <button
+                              onClick={handleAddMatchToAutoFinalize}
+                              className="flex-1 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
+                            >
+                              Enable Auto-Finalize
+                            </button>
+                          )}
                         </div>
                       </div>
                     )}

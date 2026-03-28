@@ -15,6 +15,8 @@ import type {
   UpdateRealTeamPlayerPriceRequest,
   TriggerMatchFinalizationRequest,
   AddMatchToAutoFinalizeListRequest,
+  RemoveMatchFromAutoFinalizeListRequest,
+  AutoFinalizeMatch,
   PaginatedSeriesLeaderboardResponse,
   GetSeriesLeaderboardParams,
   RecalculateSeriesLeaderboardRequest,
@@ -152,6 +154,15 @@ export const adminApi = {
     data: AddMatchToAutoFinalizeListRequest,
   ): Promise<void> {
     await api.patch("/admin/matches/auto-finalize", data);
+  },
+  async getAutoFinalizeMatchList(): Promise<AutoFinalizeMatch[]> {
+    const response = await api.get<AutoFinalizeMatch[]>("/admin/matches/auto-finalize");
+    return response.data;
+  },
+  async removeMatchFromAutoFinalizeList(
+    data: RemoveMatchFromAutoFinalizeListRequest,
+  ): Promise<void> {
+    await api.delete("/admin/matches/auto-finalize", { data });
   },
 };
 

@@ -9,9 +9,15 @@ interface MatchCardProps {
   match: MatchWithContestSummary;
   onClick?: (matchId: string) => void;
   isSelected?: boolean;
+  isAutoFinalizeEnabled?: boolean;
 }
 
-export function MatchCard({ match, onClick, isSelected }: MatchCardProps) {
+export function MatchCard({
+  match,
+  onClick,
+  isSelected,
+  isAutoFinalizeEnabled,
+}: MatchCardProps) {
   const statusColor =
     MATCH_STATUS_COLORS[match.status] ??
     "bg-slate-500/20 text-slate-400 border-slate-500/30";
@@ -62,6 +68,14 @@ export function MatchCard({ match, onClick, isSelected }: MatchCardProps) {
             <p className="text-xs text-slate-500 truncate mt-0.5">
               {match.series}
             </p>
+          )}
+          {isAutoFinalizeEnabled && (
+            <div className="flex items-center gap-1 mt-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+              <span className="text-[10px] font-bold text-purple-400 uppercase tracking-tighter">
+                Auto-Finalize Enabled
+              </span>
+            </div>
           )}
         </div>
         <span

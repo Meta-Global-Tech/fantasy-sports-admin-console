@@ -308,6 +308,16 @@ export interface AddMatchToAutoFinalizeListRequest {
   matchEndTime?: number;
 }
 
+export interface RemoveMatchFromAutoFinalizeListRequest {
+  matchId: string;
+}
+
+export interface AutoFinalizeMatch {
+  matchId: string;
+  matchEndTime: number;
+  finalizedTime?: number;
+}
+
 // ── Series Leaderboard ────────────────────────────────────────────────────────
 
 export interface SeriesLeaderboardEntry {

@@ -3133,6 +3133,24 @@
         "type": "object",
         "additionalProperties": false
       },
+      "AutoFinalizeMatch": {
+        "properties": {
+          "matchId": {
+            "type": "string"
+          },
+          "matchEndTime": {
+            "type": "number",
+            "format": "double"
+          },
+          "finalizedTime": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "required": ["matchId", "matchEndTime"],
+        "type": "object",
+        "additionalProperties": false
+      },
       "RecalculateSeriesLeaderboardResult": {
         "properties": {
           "series": {
@@ -5161,6 +5179,102 @@
         ]
       }
     },
+    "/admin/matches/auto-finalize": {
+      "get": {
+        "operationId": "GetAutoFinalizeMatchList",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AutoFinalizeMatch"
+                  },
+                  "type": "array"
+                }
+              }
+            }
+          }
+        },
+        "description": "List all matches in the auto-finalize list",
+        "tags": ["Admin"],
+        "security": [
+          {
+            "jwt": ["ADMIN"]
+          }
+        ],
+        "parameters": []
+      },
+      "patch": {
+        "operationId": "AddMatchToAutoFinalizeList",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "description": "Add match to auto finalize list",
+        "tags": ["Admin"],
+        "security": [
+          {
+            "jwt": ["ADMIN"]
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "matchEndTime": {
+                    "type": "number",
+                    "format": "double"
+                  },
+                  "matchId": {
+                    "type": "string"
+                  }
+                },
+                "required": ["matchId"],
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "RemoveMatchFromAutoFinalizeList",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "description": "Remove match from auto finalize list",
+        "tags": ["Admin"],
+        "security": [
+          {
+            "jwt": ["ADMIN"]
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "matchId": {
+                    "type": "string"
+                  }
+                },
+                "required": ["matchId"],
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/players/default-price": {
       "patch": {
         "operationId": "UpdatePlayerProfileDefaultPrice",
@@ -5241,44 +5355,6 @@
                 "required": ["price", "realTeamIdPlayerProfileId", "matchId"],
                 "type": "object",
                 "description": "The update details including matchId and realTeamId#playerProfileId"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/admin/matches/auto-finalize": {
-      "patch": {
-        "operationId": "AddMatchToAutoFinalizeList",
-        "responses": {
-          "204": {
-            "description": "No content"
-          }
-        },
-        "description": "Add match to auto finalize list",
-        "tags": ["Admin"],
-        "security": [
-          {
-            "jwt": ["ADMIN"]
-          }
-        ],
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "properties": {
-                  "matchEndTime": {
-                    "type": "number",
-                    "format": "double"
-                  },
-                  "matchId": {
-                    "type": "string"
-                  }
-                },
-                "required": ["matchId"],
-                "type": "object"
               }
             }
           }
