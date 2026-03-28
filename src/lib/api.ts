@@ -13,6 +13,12 @@ import type {
   GetPlayerProfilesParams,
   UpdatePlayerProfileDefaultPriceRequest,
   UpdateRealTeamPlayerPriceRequest,
+  TriggerMatchFinalizationRequest,
+  AddMatchToAutoFinalizeListRequest,
+  PaginatedSeriesLeaderboardResponse,
+  GetSeriesLeaderboardParams,
+  RecalculateSeriesLeaderboardRequest,
+  SeriesListResponse,
 } from "@/types";
 
 // ── Token store ─────────────────────────────────────────────────────────────
@@ -136,5 +142,37 @@ export const adminApi = {
     data: UpdateRealTeamPlayerPriceRequest,
   ): Promise<void> {
     await api.patch("/admin/matches/player-price", data);
+  },
+  async triggerMatchFinalization(
+    data: TriggerMatchFinalizationRequest,
+  ): Promise<void> {
+    await api.post("/admin/matches/trigger-finalization", data);
+  },
+  async addMatchToAutoFinalizeList(
+    data: AddMatchToAutoFinalizeListRequest,
+  ): Promise<void> {
+    await api.patch("/admin/matches/auto-finalize", data);
+  },
+};
+
+export const seriesApi = {
+  async getAllSeries(): Promise<SeriesListResponse> {
+    const response = await api.get<SeriesListResponse>("/series-leaderboard/all");
+    return response.data;
+  },
+  async getSeriesLeaderboard(
+    series: string,
+    params?: GetSeriesLeaderboardParams,
+  ): Promise<PaginatedSeriesLeaderboardResponse> {
+    const response = await api.get<PaginatedSeriesLeaderboardResponse>(
+      `/series-leaderboard/${encodeURIComponent(series)}`,
+      { params },
+    );
+    return response.data;
+  },
+  async recalculateSeriesLeaderboard(
+    data: RecalculateSeriesLeaderboardRequest,
+  ): Promise<void> {
+    await api.post("/admin/series/recalculate-leaderboard", data);
   },
 };

@@ -330,6 +330,49 @@ export default function MatchesPage() {
     }
   };
 
+  const handleTriggerFinalization = async () => {
+    if (!selectedMatchId) return;
+
+    setConfirmModal({
+      isOpen: true,
+      title: "Trigger Match Finalization",
+      message: "Are you sure you want to trigger manual finalization for this match? This will process payouts and points.",
+      variant: "blue",
+      onConfirm: async () => {
+        setLoadingDetails(true);
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await adminApi.triggerMatchFinalization({ matchId: selectedMatchId });
+          alert("Match finalization triggered successfully");
+          // Refresh details
+          await handleMatchClick(selectedMatchId);
+        } catch (err: any) {
+          console.error("Failed to trigger finalization", err);
+          alert(err.response?.data?.message || "Failed to trigger finalization");
+        } finally {
+          setLoadingDetails(false);
+        }
+      },
+    });
+  };
+
+  const handleAddMatchToAutoFinalize = async () => {
+    if (!selectedMatchId) return;
+
+    try {
+      setLoadingDetails(true);
+      await adminApi.addMatchToAutoFinalizeList({ matchId: selectedMatchId });
+      alert("Match added to auto-finalize list");
+      // Refresh details
+      await handleMatchClick(selectedMatchId);
+    } catch (err: any) {
+      console.error("Failed to add to auto-finalize", err);
+      alert(err.response?.data?.message || "Failed to add to auto-finalize");
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
   // Fetch when dates change
   useEffect(() => {
     setNextCursor(undefined);
@@ -574,29 +617,49 @@ export default function MatchesPage() {
                       </div>
                     )}
                     
-                    {/* Tabs */}
+                    {/* Tabs & Admin Actions */}
                     {selectedMatchDetails && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setActiveSideTab("contests")}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                            activeSideTab === "contests"
-                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                              : "bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10"
-                          }`}
-                        >
-                          Contests
-                        </button>
-                        <button
-                          onClick={() => setActiveSideTab("teams")}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                            activeSideTab === "teams"
-                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                              : "bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10"
-                          }`}
-                        >
-                          Teams & Scorecards
-                        </button>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setActiveSideTab("contests")}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                              activeSideTab === "contests"
+                                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                : "bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10"
+                            }`}
+                          >
+                            Contests
+                          </button>
+                          <button
+                            onClick={() => setActiveSideTab("teams")}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                              activeSideTab === "teams"
+                                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                : "bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10"
+                            }`}
+                          >
+                            Teams & Scorecards
+                          </button>
+                        </div>
+
+                        {/* Match Actions */}
+                        <div className="flex gap-2">
+                          {selectedMatchDetails.status !== "FINALIZED" && (
+                            <button
+                              onClick={handleTriggerFinalization}
+                              className="flex-1 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
+                            >
+                              Finalize Match
+                            </button>
+                          )}
+                          <button
+                            onClick={handleAddMatchToAutoFinalize}
+                            className="flex-1 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
+                          >
+                            Auto-Finalize
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>

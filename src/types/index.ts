@@ -298,3 +298,40 @@ export interface UpdateRealTeamPlayerPriceRequest {
   realTeamIdPlayerProfileId: string;
   matchId: string;
 }
+
+export interface TriggerMatchFinalizationRequest {
+  matchId: string;
+}
+
+export interface AddMatchToAutoFinalizeListRequest {
+  matchId: string;
+  matchEndTime?: number;
+}
+
+// ── Series Leaderboard ────────────────────────────────────────────────────────
+
+export interface SeriesLeaderboardEntry {
+  userId: string;
+  userName: string;
+  totalScore: number;
+  matchCount: number;
+  rank: number;
+}
+
+export interface PaginatedSeriesLeaderboardResponse {
+  items: SeriesLeaderboardEntry[];
+  nextCursor?: string | number;
+  hasMore: boolean;
+}
+
+export interface RecalculateSeriesLeaderboardRequest {
+  series: string;
+}
+
+export interface GetSeriesLeaderboardParams {
+  pageSize?: number;
+  cursor?: string;
+}
+export interface SeriesListResponse {
+  items: string[];
+}

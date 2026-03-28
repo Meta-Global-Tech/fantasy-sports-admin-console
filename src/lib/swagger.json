@@ -532,6 +532,122 @@
         "type": "object",
         "additionalProperties": false
       },
+      "SeriesLeaderboardEntry": {
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "totalScore": {
+            "type": "number",
+            "format": "double"
+          },
+          "matchCount": {
+            "type": "number",
+            "format": "double"
+          },
+          "rank": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "required": ["userId", "totalScore", "matchCount", "rank"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "PaginatedSeriesLeaderboardEntf94f": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SeriesLeaderboardEntry"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number",
+                "format": "double"
+              }
+            ]
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        },
+        "required": ["items", "hasMore"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "SeriesLeaderboardWithEntries": {
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "totalScore": {
+            "type": "number",
+            "format": "double"
+          },
+          "matchCount": {
+            "type": "number",
+            "format": "double"
+          },
+          "rank": {
+            "type": "number",
+            "format": "double"
+          },
+          "matchScores": {
+            "items": {
+              "properties": {
+                "rank": {
+                  "type": "number",
+                  "format": "double"
+                },
+                "score": {
+                  "type": "number",
+                  "format": "double"
+                },
+                "dreamTeamId": {
+                  "type": "string"
+                },
+                "contestId": {
+                  "type": "number",
+                  "format": "double"
+                },
+                "matchId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "rank",
+                "score",
+                "dreamTeamId",
+                "contestId",
+                "matchId"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "userId",
+          "totalScore",
+          "matchCount",
+          "rank",
+          "matchScores"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
       "ContestStatus": {
         "enum": [
           "PREMATCH",
@@ -3016,6 +3132,26 @@
         "required": ["items", "hasMore"],
         "type": "object",
         "additionalProperties": false
+      },
+      "RecalculateSeriesLeaderboardResult": {
+        "properties": {
+          "series": {
+            "type": "string"
+          },
+          "entriesUpdated": {
+            "type": "number",
+            "format": "double"
+          },
+          "leaderboard": {
+            "items": {
+              "$ref": "#/components/schemas/SeriesLeaderboardEntry"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["series", "entriesUpdated", "leaderboard"],
+        "type": "object",
+        "additionalProperties": false
       }
     },
     "securitySchemes": {
@@ -3441,6 +3577,122 @@
             }
           }
         }
+      }
+    },
+    "/series-leaderboard/all": {
+      "get": {
+        "operationId": "GetAllSeriesWithLeaderboard",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get all series that have a leaderboard",
+        "tags": ["Series Leaderboard"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": []
+      }
+    },
+    "/series-leaderboard/{series}": {
+      "get": {
+        "operationId": "GetSeriesLeaderboard",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedSeriesLeaderboardEntf94f"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get series leaderboard for a specific series",
+        "tags": ["Series Leaderboard"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [
+          {
+            "description": "Series name",
+            "in": "path",
+            "name": "series",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "format": "double",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/series-leaderboard/{series}/me": {
+      "get": {
+        "operationId": "GetMySeriesLeaderboardEntry",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeriesLeaderboardWithEntries"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get authenticated user's series leaderboard entry with match details",
+        "tags": ["Series Leaderboard"],
+        "security": [
+          {
+            "jwt": []
+          }
+        ],
+        "parameters": [
+          {
+            "description": "Series name",
+            "in": "path",
+            "name": "series",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     },
     "/matches/new": {
@@ -4989,6 +5241,119 @@
                 "required": ["price", "realTeamIdPlayerProfileId", "matchId"],
                 "type": "object",
                 "description": "The update details including matchId and realTeamId#playerProfileId"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/matches/auto-finalize": {
+      "patch": {
+        "operationId": "AddMatchToAutoFinalizeList",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "description": "Add match to auto finalize list",
+        "tags": ["Admin"],
+        "security": [
+          {
+            "jwt": ["ADMIN"]
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "matchEndTime": {
+                    "type": "number",
+                    "format": "double"
+                  },
+                  "matchId": {
+                    "type": "string"
+                  }
+                },
+                "required": ["matchId"],
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/matches/trigger-finalization": {
+      "post": {
+        "operationId": "TriggerMatchFinalization",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "description": "Trigger match finalization manually",
+        "tags": ["Admin"],
+        "security": [
+          {
+            "jwt": ["ADMIN"]
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "matchId": {
+                    "type": "string"
+                  }
+                },
+                "required": ["matchId"],
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/series/recalculate-leaderboard": {
+      "post": {
+        "operationId": "RecalculateSeriesLeaderboard",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecalculateSeriesLeaderboardResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "Recalculate series leaderboard for a specific series",
+        "tags": ["Admin"],
+        "security": [
+          {
+            "jwt": ["ADMIN"]
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "series": {
+                    "type": "string"
+                  }
+                },
+                "required": ["series"],
+                "type": "object"
               }
             }
           }
