@@ -404,6 +404,32 @@ export default function MatchesPage() {
     }
   };
 
+  const handleUpdateScoreFromEspn = async () => {
+    if (!selectedMatchId) return;
+
+    setConfirmModal({
+      isOpen: true,
+      title: "Update Score from ESPN",
+      message: "Are you sure you want to trigger a score update from ESPN for this match?",
+      variant: "blue",
+      onConfirm: async () => {
+        setLoadingDetails(true);
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await adminApi.updateMatchScoreFromEspn({ matchId: selectedMatchId });
+          alert("Score update triggered successfully");
+          // Refresh details
+          await handleMatchClick(selectedMatchId);
+        } catch (err: any) {
+          console.error("Failed to update score", err);
+          alert(err.response?.data?.message || "Failed to update score");
+        } finally {
+          setLoadingDetails(false);
+        }
+      },
+    });
+  };
+
   // Fetch when dates change
   useEffect(() => {
     setNextCursor(undefined);
@@ -699,7 +725,7 @@ export default function MatchesPage() {
                         </div>
 
                         {/* Match Actions */}
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           {selectedMatchDetails.status !== "FINALIZED" && (
                             <button
                               onClick={handleTriggerFinalization}
@@ -708,6 +734,13 @@ export default function MatchesPage() {
                               Finalize Match
                             </button>
                           )}
+                          <button
+                            onClick={handleUpdateScoreFromEspn}
+                            className="flex-1 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
+                          >
+                            Update Score
+                          </button>
+                          <div className="w-full" /> {/* Force next row for auto-finalize if needed */}
                           {autoFinalizeMatches.some(af => af.matchId === selectedMatchId) ? (
                             <button
                               onClick={handleRemoveMatchFromAutoFinalize}

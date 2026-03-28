@@ -318,6 +318,10 @@ export interface AutoFinalizeMatch {
   finalizedTime?: number;
 }
 
+export interface UpdateMatchScoreFromEspnRequest {
+  matchId: string;
+}
+
 // ── Series Leaderboard ────────────────────────────────────────────────────────
 
 export interface SeriesLeaderboardEntry {

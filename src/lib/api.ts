@@ -16,6 +16,7 @@ import type {
   TriggerMatchFinalizationRequest,
   AddMatchToAutoFinalizeListRequest,
   RemoveMatchFromAutoFinalizeListRequest,
+  UpdateMatchScoreFromEspnRequest,
   AutoFinalizeMatch,
   PaginatedSeriesLeaderboardResponse,
   GetSeriesLeaderboardParams,
@@ -163,6 +164,11 @@ export const adminApi = {
     data: RemoveMatchFromAutoFinalizeListRequest,
   ): Promise<void> {
     await api.delete("/admin/matches/auto-finalize", { data });
+  },
+  async updateMatchScoreFromEspn(
+    data: UpdateMatchScoreFromEspnRequest,
+  ): Promise<void> {
+    await api.post("/admin/matches/update-score", data);
   },
 };
 

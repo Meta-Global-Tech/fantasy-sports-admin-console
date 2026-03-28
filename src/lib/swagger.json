@@ -648,6 +648,207 @@
         "type": "object",
         "additionalProperties": false
       },
+      "MatchStatus": {
+        "enum": [
+          "SETTINGUP",
+          "PREMATCH",
+          "TOSTART",
+          "LINEUPANNOUNCED",
+          "INMATCH",
+          "MATCHENDED",
+          "FINALIZED"
+        ],
+        "type": "string"
+      },
+      "Recordnumberany": {
+        "properties": {},
+        "additionalProperties": {},
+        "type": "object",
+        "description": "Construct a type with a set of properties K of type T"
+      },
+      "ScoreCardItemType": {
+        "enum": [
+          "RUNS",
+          "FOURS",
+          "SIXES",
+          "WICKETS",
+          "CATCHES",
+          "RUN_OUTS",
+          "RUN_OUT_DIRECT",
+          "RUN_OUT_INDIRECT",
+          "STUMPINGS",
+          "BALLS_FACED",
+          "BATTING_STRIKE_RATE",
+          "DISMISSAL",
+          "DISMISSAL_BOWLER",
+          "DISMISSAL_CATCHER",
+          "OVERS_BOWLED",
+          "MAIDEN_OVERS",
+          "BOWLING_ECONOMY",
+          "RUNS_CONCEDED",
+          "WIDES",
+          "NO_BALLS",
+          "LEG_BUYS",
+          "LINEUP_ANNOUNCED",
+          "IS_SUBSTITUTE",
+          "IS_MAN_OF_THE_MATCH"
+        ],
+        "type": "string"
+      },
+      "ScoreCardItemValueType": {
+        "enum": ["INT", "FLOAT", "STRING"],
+        "type": "string"
+      },
+      "ScoreCardItem": {
+        "properties": {
+          "scoreCardItemType": {
+            "$ref": "#/components/schemas/ScoreCardItemType"
+          },
+          "valueType": {
+            "$ref": "#/components/schemas/ScoreCardItemValueType"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number",
+                "format": "double"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": ["scoreCardItemType", "valueType", "value"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "RecordScoreCardItemTypeSco0b68": {
+        "properties": {
+          "RUNS": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "FOURS": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "SIXES": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "WICKETS": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "CATCHES": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "RUN_OUTS": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "RUN_OUT_DIRECT": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "RUN_OUT_INDIRECT": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "STUMPINGS": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "BALLS_FACED": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "BATTING_STRIKE_RATE": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "DISMISSAL": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "DISMISSAL_BOWLER": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "DISMISSAL_CATCHER": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "OVERS_BOWLED": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "MAIDEN_OVERS": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "BOWLING_ECONOMY": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "RUNS_CONCEDED": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "WIDES": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "NO_BALLS": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "LEG_BUYS": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "LINEUP_ANNOUNCED": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "IS_SUBSTITUTE": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "IS_MAN_OF_THE_MATCH": {
+            "$ref": "#/components/schemas/ScoreCardItem"
+          }
+        },
+        "required": [
+          "RUNS",
+          "FOURS",
+          "SIXES",
+          "WICKETS",
+          "CATCHES",
+          "RUN_OUTS",
+          "RUN_OUT_DIRECT",
+          "RUN_OUT_INDIRECT",
+          "STUMPINGS",
+          "BALLS_FACED",
+          "BATTING_STRIKE_RATE",
+          "DISMISSAL",
+          "DISMISSAL_BOWLER",
+          "DISMISSAL_CATCHER",
+          "OVERS_BOWLED",
+          "MAIDEN_OVERS",
+          "BOWLING_ECONOMY",
+          "RUNS_CONCEDED",
+          "WIDES",
+          "NO_BALLS",
+          "LEG_BUYS",
+          "LINEUP_ANNOUNCED",
+          "IS_SUBSTITUTE",
+          "IS_MAN_OF_THE_MATCH"
+        ],
+        "type": "object",
+        "description": "Construct a type with a set of properties K of type T"
+      },
+      "ScoreCardInning": {
+        "properties": {
+          "inning": {
+            "type": "number",
+            "format": "double"
+          },
+          "items": {
+            "$ref": "#/components/schemas/RecordScoreCardItemTypeSco0b68"
+          }
+        },
+        "required": ["inning", "items"],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "RecordScoreCardInninga23a": {
+        "properties": {},
+        "additionalProperties": {
+          "$ref": "#/components/schemas/ScoreCardInning"
+        },
+        "type": "object",
+        "description": "Construct a type with a set of properties K of type T"
+      },
       "ContestStatus": {
         "enum": [
           "PREMATCH",
@@ -842,35 +1043,6 @@
         ],
         "type": "object",
         "description": "Construct a type with a set of properties K of type T"
-      },
-      "ScoreCardItemType": {
-        "enum": [
-          "RUNS",
-          "FOURS",
-          "SIXES",
-          "WICKETS",
-          "CATCHES",
-          "RUN_OUTS",
-          "RUN_OUT_DIRECT",
-          "RUN_OUT_INDIRECT",
-          "STUMPINGS",
-          "BALLS_FACED",
-          "BATTING_STRIKE_RATE",
-          "DISMISSAL",
-          "DISMISSAL_BOWLER",
-          "DISMISSAL_CATCHER",
-          "OVERS_BOWLED",
-          "MAIDEN_OVERS",
-          "BOWLING_ECONOMY",
-          "RUNS_CONCEDED",
-          "WIDES",
-          "NO_BALLS",
-          "LEG_BUYS",
-          "LINEUP_ANNOUNCED",
-          "IS_SUBSTITUTE",
-          "IS_MAN_OF_THE_MATCH"
-        ],
-        "type": "string"
       },
       "ScoreMultiplerItem": {
         "properties": {
@@ -1089,160 +1261,6 @@
         "enum": ["CAPTAIN", "VICECAPTAIN", "MEMBER"],
         "type": "string"
       },
-      "ScoreCardItemValueType": {
-        "enum": ["INT", "FLOAT", "STRING"],
-        "type": "string"
-      },
-      "ScoreCardItem": {
-        "properties": {
-          "scoreCardItemType": {
-            "$ref": "#/components/schemas/ScoreCardItemType"
-          },
-          "valueType": {
-            "$ref": "#/components/schemas/ScoreCardItemValueType"
-          },
-          "value": {
-            "anyOf": [
-              {
-                "type": "number",
-                "format": "double"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          }
-        },
-        "required": ["scoreCardItemType", "valueType", "value"],
-        "type": "object",
-        "additionalProperties": false
-      },
-      "RecordScoreCardItemTypeSco0b68": {
-        "properties": {
-          "RUNS": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "FOURS": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "SIXES": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "WICKETS": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "CATCHES": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "RUN_OUTS": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "RUN_OUT_DIRECT": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "RUN_OUT_INDIRECT": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "STUMPINGS": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "BALLS_FACED": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "BATTING_STRIKE_RATE": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "DISMISSAL": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "DISMISSAL_BOWLER": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "DISMISSAL_CATCHER": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "OVERS_BOWLED": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "MAIDEN_OVERS": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "BOWLING_ECONOMY": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "RUNS_CONCEDED": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "WIDES": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "NO_BALLS": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "LEG_BUYS": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "LINEUP_ANNOUNCED": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "IS_SUBSTITUTE": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          },
-          "IS_MAN_OF_THE_MATCH": {
-            "$ref": "#/components/schemas/ScoreCardItem"
-          }
-        },
-        "required": [
-          "RUNS",
-          "FOURS",
-          "SIXES",
-          "WICKETS",
-          "CATCHES",
-          "RUN_OUTS",
-          "RUN_OUT_DIRECT",
-          "RUN_OUT_INDIRECT",
-          "STUMPINGS",
-          "BALLS_FACED",
-          "BATTING_STRIKE_RATE",
-          "DISMISSAL",
-          "DISMISSAL_BOWLER",
-          "DISMISSAL_CATCHER",
-          "OVERS_BOWLED",
-          "MAIDEN_OVERS",
-          "BOWLING_ECONOMY",
-          "RUNS_CONCEDED",
-          "WIDES",
-          "NO_BALLS",
-          "LEG_BUYS",
-          "LINEUP_ANNOUNCED",
-          "IS_SUBSTITUTE",
-          "IS_MAN_OF_THE_MATCH"
-        ],
-        "type": "object",
-        "description": "Construct a type with a set of properties K of type T"
-      },
-      "ScoreCardInning": {
-        "properties": {
-          "inning": {
-            "type": "number",
-            "format": "double"
-          },
-          "items": {
-            "$ref": "#/components/schemas/RecordScoreCardItemTypeSco0b68"
-          }
-        },
-        "required": ["inning", "items"],
-        "type": "object",
-        "additionalProperties": false
-      },
-      "RecordScoreCardInninga23a": {
-        "properties": {},
-        "additionalProperties": {
-          "$ref": "#/components/schemas/ScoreCardInning"
-        },
-        "type": "object",
-        "description": "Construct a type with a set of properties K of type T"
-      },
       "RealTeamPlayer": {
         "properties": {
           "matchId": {
@@ -1391,18 +1409,6 @@
       },
       "MatchType": {
         "enum": ["CRICKET"],
-        "type": "string"
-      },
-      "MatchStatus": {
-        "enum": [
-          "SETTINGUP",
-          "PREMATCH",
-          "TOSTART",
-          "LINEUPANNOUNCED",
-          "INMATCH",
-          "MATCHENDED",
-          "FINALIZED"
-        ],
         "type": "string"
       },
       "MatchSourcePlatform": {
@@ -2863,7 +2869,7 @@
         "additionalProperties": false
       },
       "Role": {
-        "enum": ["HOUSE", "GUEST", "PRACTICE", "ADMIN"],
+        "enum": ["HOUSE", "GUEST", "PRACTICE", "ADMIN", "OWNER"],
         "type": "string"
       },
       "LoginResponse": {
@@ -3705,6 +3711,159 @@
             "description": "Series name",
             "in": "path",
             "name": "series",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/owner/matches/status": {
+      "patch": {
+        "operationId": "UpdateMatchStatus",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "tags": ["Owner"],
+        "security": [
+          {
+            "jwt": ["OWNER"]
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "status": {
+                    "$ref": "#/components/schemas/MatchStatus"
+                  },
+                  "matchId": {
+                    "type": "string"
+                  }
+                },
+                "required": ["status", "matchId"],
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/owner/matches/team-score": {
+      "patch": {
+        "operationId": "UpdateRealTeamScoreCard",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "tags": ["Owner"],
+        "security": [
+          {
+            "jwt": ["OWNER"]
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "scoreCard": {
+                    "$ref": "#/components/schemas/Recordnumberany"
+                  },
+                  "realTeamId": {
+                    "type": "string"
+                  },
+                  "matchId": {
+                    "type": "string"
+                  }
+                },
+                "required": ["scoreCard", "realTeamId", "matchId"],
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/owner/matches/player-score": {
+      "patch": {
+        "operationId": "UpdatePlayerScoreCard",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "tags": ["Owner"],
+        "security": [
+          {
+            "jwt": ["OWNER"]
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "scoreCard": {
+                    "$ref": "#/components/schemas/RecordScoreCardInninga23a"
+                  },
+                  "playerProfileId": {
+                    "type": "string"
+                  },
+                  "realTeamId": {
+                    "type": "string"
+                  },
+                  "matchId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "scoreCard",
+                  "playerProfileId",
+                  "realTeamId",
+                  "matchId"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/owner/matches/{matchId}": {
+      "get": {
+        "operationId": "GetMatchWithScore",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "tags": ["Owner"],
+        "security": [
+          {
+            "jwt": ["OWNER"]
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "matchId",
             "required": true,
             "schema": {
               "type": "string"
@@ -5370,6 +5529,40 @@
           }
         },
         "description": "Trigger match finalization manually",
+        "tags": ["Admin"],
+        "security": [
+          {
+            "jwt": ["ADMIN"]
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "matchId": {
+                    "type": "string"
+                  }
+                },
+                "required": ["matchId"],
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/matches/update-score": {
+      "post": {
+        "operationId": "UpdateMatchScoreFromEspn",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "description": "Trigger score update from ESPN for a specific match",
         "tags": ["Admin"],
         "security": [
           {
