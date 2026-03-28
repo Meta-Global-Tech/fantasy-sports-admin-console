@@ -1,16 +1,14 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { seriesApi } from "@/lib/api";
 import { SeriesLeaderboardEntry } from "@/types";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
-interface PageProps {
-  params: Promise<{ series: string }>;
-}
-
-export default function SeriesDetailPage({ params }: PageProps) {
-  const { series: seriesName } = use(params);
+function SeriesLeaderboardContent() {
+  const searchParams = useSearchParams();
+  const seriesName = searchParams.get("series") || "";
   const decodedSeries = decodeURIComponent(seriesName);
 
   const [leaderboard, setLeaderboard] = useState<SeriesLeaderboardEntry[]>([]);
@@ -20,6 +18,7 @@ export default function SeriesDetailPage({ params }: PageProps) {
   const [recalcSuccess, setRecalcSuccess] = useState(false);
 
   async function fetchLeaderboard() {
+    if (!decodedSeries) return;
     setLoading(true);
     try {
       const data = await seriesApi.getSeriesLeaderboard(decodedSeries);
@@ -58,6 +57,15 @@ export default function SeriesDetailPage({ params }: PageProps) {
       setRecalculating(false);
     }
   };
+
+  if (!decodedSeries) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-400">No series selected.</p>
+        <Link href="/series" className="text-emerald-400 hover:underline">Go back to series list</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -182,5 +190,17 @@ export default function SeriesDetailPage({ params }: PageProps) {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SeriesDetailPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center py-24">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500"></div>
+      </div>
+    }>
+      <SeriesLeaderboardContent />
+    </Suspense>
   );
 }

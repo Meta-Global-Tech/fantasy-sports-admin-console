@@ -37,10 +37,11 @@ export default function PlayersPage() {
         cursor: cursor?.toString(),
       });
 
+      const items = data?.items || [];
       if (isLoadMore) {
-        setPlayers((prev) => [...prev, ...data.items]);
+        setPlayers((prev) => [...prev, ...items]);
       } else {
-        setPlayers(data.items);
+        setPlayers(items);
       }
 
       setNextCursor(data.nextCursor ?? null);
@@ -100,8 +101,8 @@ export default function PlayersPage() {
   };
 
   const filteredPlayers = players.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    p.country?.toLowerCase().includes(searchQuery.toLowerCase())
+    (p.name || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (p.country || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -168,7 +169,7 @@ export default function PlayersPage() {
                         />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">
-                          {player.name.charAt(0)}
+                          {(player.name || "?").charAt(0)}
                         </div>
                       )}
                       <div>

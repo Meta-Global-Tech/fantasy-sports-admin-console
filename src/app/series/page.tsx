@@ -44,7 +44,7 @@ export default function SeriesListPage() {
           {series.map((s) => (
             <Link
               key={s}
-              href={`/series/${encodeURIComponent(s)}`}
+              href={`/series/leaderboard?series=${encodeURIComponent(s)}`}
               className="bg-[#12121a] border border-white/5 rounded-xl p-6 hover:border-emerald-500/50 transition-all group"
             >
               <div className="flex items-center justify-between">
