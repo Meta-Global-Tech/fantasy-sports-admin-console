@@ -22,7 +22,9 @@ function SeriesLeaderboardContent() {
     setLoading(true);
     try {
       const data = await seriesApi.getSeriesLeaderboard(decodedSeries);
-      setLeaderboard(data.items);
+      const items = data.items || [];
+      const sortedLeaderboard = [...items].sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity));
+      setLeaderboard(sortedLeaderboard);
       setError(null);
     } catch (err) {
       console.error("Failed to fetch leaderboard:", err);
