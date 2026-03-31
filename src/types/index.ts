@@ -349,3 +349,21 @@ export interface GetSeriesLeaderboardParams {
 export interface SeriesListResponse {
   items: string[];
 }
+
+export interface UpdateMatchStatusRequest {
+  status: MatchStatus;
+  matchId: string;
+}
+
+export interface UpdateRealTeamScoreCardRequest {
+  scoreCard: Record<number, InningScore>;
+  realTeamId: string;
+  matchId: string;
+}
+
+export interface UpdatePlayerScoreCardRequest {
+  scoreCard: Record<number, ScoreCardInning>;
+  playerProfileId: string;
+  realTeamId: string;
+  matchId: string;
+}

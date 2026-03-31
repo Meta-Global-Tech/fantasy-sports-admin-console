@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { matchesApi, contestsApi } from "@/lib/api";
+import { matchesApi, contestsApi, ownerApi } from "@/lib/api";
 import type {
   MatchWithContestSummary,
   MatchStatus,
@@ -13,6 +13,8 @@ import type {
   Transaction,
   UpdateRealTeamPlayerPriceRequest,
   AutoFinalizeMatch,
+  InningScore,
+  ScoreCardInning,
 } from "@/types";
 import { MatchCard } from "@/components/MatchCard";
 import { CreateContestForm } from "@/components/CreateContestForm";
@@ -178,6 +180,11 @@ export default function MatchesPage() {
   const [isCreatingContest, setIsCreatingContest] = useState(false);
   const [updatingPricePlayerId, setUpdatingPricePlayerId] = useState<string | null>(null);
   const [pendingPlayerPrices, setPendingPlayerPrices] = useState<Record<string, string>>({});
+  const [editingTeamScore, setEditingTeamScore] = useState<{ realTeamId: string; inning: number } | null>(null);
+  const [editingPlayerScore, setEditingPlayerScore] = useState<{ playerProfileId: string; inning: number } | null>(null);
+  const [pendingInningScores, setPendingInningScores] = useState<Record<string, Partial<InningScore>>>({});
+  const [pendingPlayerScoreItems, setPendingPlayerScoreItems] = useState<Record<string, Record<string, string | number>>>({});
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   // Modal state
   const [confirmModal, setConfirmModal] = useState<{
@@ -430,6 +437,114 @@ export default function MatchesPage() {
     });
   };
 
+  const handleUpdateMatchStatus = async (newStatus: MatchStatus) => {
+    if (!selectedMatchId) return;
+    setIsUpdatingStatus(true);
+    try {
+      await ownerApi.updateMatchStatus({ matchId: selectedMatchId, status: newStatus });
+      // Refresh current match details
+      const details = await matchesApi.getAllContestsByMatchId(selectedMatchId);
+      setSelectedMatchDetails(details);
+      // Also update the match in matches list if it's there
+      setMatches(prev => prev.map(m => m.id === selectedMatchId ? { ...m, status: newStatus } : m));
+    } catch (err: any) {
+      console.error("Failed to update match status", err);
+      alert(err.response?.data?.message || "Failed to update status");
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleUpdateTeamScore = async (realTeamId: string, inning: number) => {
+    if (!selectedMatchId || !selectedMatchDetails) return;
+    const pending = pendingInningScores[`${realTeamId}#${inning}`];
+    if (!pending) return;
+
+    const team = selectedMatchDetails.teams.find(t => t.realTeamId === realTeamId);
+    if (!team) return;
+
+    const currentScoreCard = team.scoreCard || {};
+    const updatedInningScore = {
+      ...(currentScoreCard[inning] || { inning, runs: 0, wickets: 0, overs: 0 }),
+      ...pending
+    };
+
+    const newScoreCard = {
+      ...currentScoreCard,
+      [inning]: updatedInningScore
+    };
+
+    try {
+      setLoadingDetails(true);
+      await ownerApi.updateRealTeamScoreCard({
+        matchId: selectedMatchId,
+        realTeamId,
+        scoreCard: newScoreCard
+      });
+      // Refresh details
+      const details = await matchesApi.getAllContestsByMatchId(selectedMatchId);
+      setSelectedMatchDetails(details);
+      setEditingTeamScore(null);
+    } catch (err: any) {
+      console.error("Failed to update team score", err);
+      alert(err.response?.data?.message || "Failed to update team score");
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  const handleUpdatePlayerScore = async (playerProfileId: string, realTeamId: string, inning: number) => {
+    if (!selectedMatchId || !selectedMatchDetails) return;
+    const pending = pendingPlayerScoreItems[`${playerProfileId}#${inning}`];
+    if (!pending) return;
+
+    const team = selectedMatchDetails.teams.find(t => t.realTeamId === realTeamId);
+    const player = team?.players.find(p => p.playerProfileId === playerProfileId);
+    if (!player) return;
+
+    const currentScoreCard = player.scoreCard || {};
+    const currentInning = currentScoreCard[inning] || { inning, items: {} };
+
+    const updatedItems = { ...currentInning.items };
+    Object.entries(pending).forEach(([type, val]) => {
+      // Find valueType from current or default to INT or FLOAT
+      const existing = updatedItems[type];
+      const valueType = existing?.valueType || (typeof val === 'number' ? 'INT' : 'STRING');
+      updatedItems[type] = {
+        scoreCardItemType: type,
+        valueType,
+        value: val
+      };
+    });
+
+    const newScoreCard = {
+      ...currentScoreCard,
+      [inning]: {
+        inning,
+        items: updatedItems
+      }
+    };
+
+    try {
+      setLoadingDetails(true);
+      await ownerApi.updatePlayerScoreCard({
+        matchId: selectedMatchId,
+        playerProfileId,
+        realTeamId,
+        scoreCard: newScoreCard
+      });
+      // Refresh details
+      const details = await matchesApi.getAllContestsByMatchId(selectedMatchId);
+      setSelectedMatchDetails(details);
+      setEditingPlayerScore(null);
+    } catch (err: any) {
+      console.error("Failed to update player score", err);
+      alert(err.response?.data?.message || "Failed to update player score");
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
   // Fetch when dates change
   useEffect(() => {
     setNextCursor(undefined);
@@ -645,14 +760,35 @@ export default function MatchesPage() {
                 ) : (
                   <div className="flex flex-col gap-3 w-full">
                     <div>
-                      <h2 className="text-lg font-semibold text-white">
-                        Match Details
-                      </h2>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {selectedMatchDetails?.contests
-                          ? `${selectedMatchDetails.contests.length} contests found`
-                          : "Loading..."}
-                      </p>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h2 className="text-lg font-semibold text-white">
+                            Match Details
+                          </h2>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            {selectedMatchDetails?.contests
+                              ? `${selectedMatchDetails.contests.length} contests found`
+                              : "Loading..."}
+                          </p>
+                        </div>
+                        {selectedMatchDetails && (
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Status</span>
+                            <select
+                              value={selectedMatchDetails.status}
+                              disabled={isUpdatingStatus}
+                              onChange={(e) => handleUpdateMatchStatus(e.target.value as MatchStatus)}
+                              className="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold py-1 px-2 rounded border border-emerald-500/20 focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+                            >
+                              {STATUS_FILTERS.filter(f => f.value !== "ALL").map(f => (
+                                <option key={f.value} value={f.value} className="bg-[#0d0d14] text-white">
+                                  {f.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Match Sources */}
@@ -1209,21 +1345,149 @@ export default function MatchesPage() {
                           </div>
 
                           {/* Team Scorecards */}
-                          {team.scoreCard && Object.keys(team.scoreCard).length > 0 && (
-                            <div className="mb-4">
-                              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Team Score</h4>
-                              <div className="flex gap-2">
-                                {Object.values(team.scoreCard).map((inning) => (
-                                  <div key={inning.inning} className="flex-1 bg-white/5 border border-white/5 rounded-lg p-2">
-                                    <p className="text-[10px] text-slate-500 mb-1 font-semibold">Inning {inning.inning}</p>
+                          <div className="mb-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Team Score</h4>
+                              <button
+                                onClick={() => {
+                                  const currentInnings = team.scoreCard ? Object.keys(team.scoreCard).length : 0;
+                                  const nextInning = currentInnings + 1;
+                                  setEditingTeamScore({ realTeamId: team.realTeamId, inning: nextInning });
+                                  setPendingInningScores({ [`${team.realTeamId}#${nextInning}`]: { runs: 0, wickets: 0, overs: 0 } });
+                                }}
+                                className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
+                              >
+                                + Add Inning
+                              </button>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              {team.scoreCard && Object.values(team.scoreCard).map((inning) => (
+                                <div key={inning.inning} className="bg-white/5 border border-white/5 rounded-lg p-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <p className="text-[10px] text-slate-500 font-semibold uppercase">Inning {inning.inning}</p>
+                                    <div className="flex gap-2">
+                                      {editingTeamScore?.realTeamId === team.realTeamId && editingTeamScore?.inning === inning.inning ? (
+                                        <>
+                                          <button
+                                            onClick={() => setEditingTeamScore(null)}
+                                            className="text-[9px] font-bold text-slate-500 hover:text-slate-400"
+                                          >
+                                            Cancel
+                                          </button>
+                                          <button
+                                            onClick={() => handleUpdateTeamScore(team.realTeamId, inning.inning)}
+                                            className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300"
+                                          >
+                                            Save
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <button
+                                          onClick={() => {
+                                            setEditingTeamScore({ realTeamId: team.realTeamId, inning: inning.inning });
+                                            setPendingInningScores({ [`${team.realTeamId}#${inning.inning}`]: { runs: inning.runs, wickets: inning.wickets, overs: inning.overs } });
+                                          }}
+                                          className="text-[9px] font-bold text-blue-400 hover:text-blue-300"
+                                        >
+                                          Edit
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  {editingTeamScore?.realTeamId === team.realTeamId && editingTeamScore?.inning === inning.inning ? (
+                                    <div className="grid grid-cols-3 gap-2">
+                                      <div>
+                                        <p className="text-[9px] text-slate-500 mb-1">Runs</p>
+                                        <input
+                                          type="number"
+                                          defaultValue={inning.runs}
+                                          onChange={(e) => setPendingInningScores(prev => ({ ...prev, [`${team.realTeamId}#${inning.inning}`]: { ...prev[`${team.realTeamId}#${inning.inning}`], runs: parseInt(e.target.value) } }))}
+                                          className="w-full bg-black/20 border border-white/10 rounded px-2 py-1 text-xs focus:outline-none"
+                                        />
+                                      </div>
+                                      <div>
+                                        <p className="text-[9px] text-slate-500 mb-1">Wickets</p>
+                                        <input
+                                          type="number"
+                                          defaultValue={inning.wickets}
+                                          onChange={(e) => setPendingInningScores(prev => ({ ...prev, [`${team.realTeamId}#${inning.inning}`]: { ...prev[`${team.realTeamId}#${inning.inning}`], wickets: parseInt(e.target.value) } }))}
+                                          className="w-full bg-black/20 border border-white/10 rounded px-2 py-1 text-xs focus:outline-none"
+                                        />
+                                      </div>
+                                      <div>
+                                        <p className="text-[9px] text-slate-500 mb-1">Overs</p>
+                                        <input
+                                          type="number"
+                                          step="0.1"
+                                          defaultValue={inning.overs}
+                                          onChange={(e) => setPendingInningScores(prev => ({ ...prev, [`${team.realTeamId}#${inning.inning}`]: { ...prev[`${team.realTeamId}#${inning.inning}`], overs: parseFloat(e.target.value) } }))}
+                                          className="w-full bg-black/20 border border-white/10 rounded px-2 py-1 text-xs focus:outline-none"
+                                        />
+                                      </div>
+                                    </div>
+                                  ) : (
                                     <p className="text-sm font-mono font-bold text-white">
                                       {inning.runs}/{inning.wickets} <span className="text-xs font-normal text-slate-400">({inning.overs} ov)</span>
                                     </p>
+                                  )}
+                                </div>
+                              ))}
+                              
+                              {/* Show new inning fields if adding */}
+                              {editingTeamScore?.realTeamId === team.realTeamId && !team.scoreCard?.[editingTeamScore.inning] && (
+                                <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <p className="text-[10px] text-emerald-400 font-semibold uppercase">New Inning {editingTeamScore.inning}</p>
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={() => setEditingTeamScore(null)}
+                                        className="text-[9px] font-bold text-slate-500 hover:text-slate-400"
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        onClick={() => handleUpdateTeamScore(team.realTeamId, editingTeamScore.inning)}
+                                        className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300"
+                                      >
+                                        Create
+                                      </button>
+                                    </div>
                                   </div>
-                                ))}
-                              </div>
+                                  <div className="grid grid-cols-3 gap-2">
+                                    <div>
+                                      <p className="text-[9px] text-slate-500 mb-1">Runs</p>
+                                      <input
+                                        type="number"
+                                        placeholder="0"
+                                        onChange={(e) => setPendingInningScores(prev => ({ ...prev, [`${team.realTeamId}#${editingTeamScore.inning}`]: { ...prev[`${team.realTeamId}#${editingTeamScore.inning}`], runs: parseInt(e.target.value) } }))}
+                                        className="w-full bg-black/20 border border-white/10 rounded px-2 py-1 text-xs focus:outline-none"
+                                      />
+                                    </div>
+                                    <div>
+                                      <p className="text-[9px] text-slate-500 mb-1">Wickets</p>
+                                      <input
+                                        type="number"
+                                        placeholder="0"
+                                        onChange={(e) => setPendingInningScores(prev => ({ ...prev, [`${team.realTeamId}#${editingTeamScore.inning}`]: { ...prev[`${team.realTeamId}#${editingTeamScore.inning}`], wickets: parseInt(e.target.value) } }))}
+                                        className="w-full bg-black/20 border border-white/10 rounded px-2 py-1 text-xs focus:outline-none"
+                                      />
+                                    </div>
+                                    <div>
+                                      <p className="text-[9px] text-slate-500 mb-1">Overs</p>
+                                      <input
+                                        type="number"
+                                        step="0.1"
+                                        placeholder="0"
+                                        onChange={(e) => setPendingInningScores(prev => ({ ...prev, [`${team.realTeamId}#${editingTeamScore.inning}`]: { ...prev[`${team.realTeamId}#${editingTeamScore.inning}`], overs: parseFloat(e.target.value) } }))}
+                                        className="w-full bg-black/20 border border-white/10 rounded px-2 py-1 text-xs focus:outline-none"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                          )}
+                          </div>
 
                           {/* Team players */}
                           <div className="flex flex-col gap-2">
@@ -1292,40 +1556,198 @@ export default function MatchesPage() {
                                 )}
 
                                 {/* Player Scorecards */}
-                                {player.scoreCard &&
-                                  Object.keys(player.scoreCard).length > 0 && (
-                                    <div className="mt-3 pt-3 border-t border-white/5">
-                                      {Object.values(player.scoreCard).map(
-                                        (inning) => (
-                                          <div
-                                            key={inning.inning}
-                                            className="mb-2 last:mb-0"
-                                          >
-                                            <p className="text-[10px] text-slate-500 mb-1 font-semibold">
-                                              Inning {inning.inning}
-                                            </p>
-                                            <div className="flex flex-wrap gap-1.5">
-                                              {Object.values(inning.items).map(
-                                                (item, idx) => (
-                                                  <div
-                                                    key={idx}
-                                                    className="bg-black/20 border border-white/5 rounded px-1.5 py-0.5 text-[9px] flex items-center gap-1"
-                                                  >
-                                                    <span className="text-slate-500">
-                                                      {item.scoreCardItemType}:
-                                                    </span>
-                                                    <span className="text-white font-mono">
-                                                      {item.value}
-                                                    </span>
-                                                  </div>
-                                                ),
-                                              )}
-                                            </div>
+                                <div className="mt-3 pt-3 border-t border-white/5">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Scorecard</h4>
+                                    <button
+                                      onClick={() => {
+                                        const currentInnings = player.scoreCard ? Object.keys(player.scoreCard).length : 0;
+                                        const nextInning = currentInnings + 1;
+                                        setEditingPlayerScore({ playerProfileId: player.playerProfileId, inning: nextInning });
+                                        setPendingPlayerScoreItems({ [`${player.playerProfileId}#${nextInning}`]: {} });
+                                      }}
+                                      className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
+                                    >
+                                      + Inning
+                                    </button>
+                                  </div>
+                                  {player.scoreCard && Object.values(player.scoreCard).map((inning) => (
+                                    <div key={inning.inning} className="mb-4 bg-white/5 border border-white/5 rounded-lg p-2">
+                                      <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/5">
+                                        <p className="text-[10px] text-slate-500 font-semibold">Inning {inning.inning}</p>
+                                        <div className="flex gap-2">
+                                          {editingPlayerScore?.playerProfileId === player.playerProfileId && editingPlayerScore?.inning === inning.inning ? (
+                                            <>
+                                              <button
+                                                onClick={() => setEditingPlayerScore(null)}
+                                                className="text-[9px] font-bold text-slate-500 hover:text-slate-400"
+                                              >
+                                                Cancel
+                                              </button>
+                                              <button
+                                                onClick={() => handleUpdatePlayerScore(player.playerProfileId, team.realTeamId, inning.inning)}
+                                                className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300"
+                                              >
+                                                Save
+                                              </button>
+                                            </>
+                                          ) : (
+                                            <button
+                                              onClick={() => {
+                                                setEditingPlayerScore({ playerProfileId: player.playerProfileId, inning: inning.inning });
+                                                const items: Record<string, string | number> = {};
+                                                Object.values(inning.items).forEach(it => {
+                                                  items[it.scoreCardItemType] = it.value;
+                                                });
+                                                setPendingPlayerScoreItems({ [`${player.playerProfileId}#${inning.inning}`]: items });
+                                              }}
+                                              className="text-[9px] font-bold text-blue-400 hover:text-blue-300"
+                                            >
+                                              Edit
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                      
+                                      {editingPlayerScore?.playerProfileId === player.playerProfileId && editingPlayerScore?.inning === inning.inning ? (
+                                        <div className="flex flex-col gap-2">
+                                          <div className="grid grid-cols-2 gap-2">
+                                            {Object.entries(pendingPlayerScoreItems[`${player.playerProfileId}#${inning.inning}`] || {}).map(([type, value]) => (
+                                              <div key={type} className="flex flex-col gap-1">
+                                                <label className="text-[8px] text-slate-500 uppercase">{type.replace(/_/g, ' ')}</label>
+                                                <input
+                                                  type={typeof value === 'number' ? 'number' : 'text'}
+                                                  defaultValue={value}
+                                                  onChange={(e) => {
+                                                    const val = e.target.type === 'number' ? parseFloat(e.target.value) : e.target.value;
+                                                    setPendingPlayerScoreItems(prev => ({
+                                                      ...prev,
+                                                      [`${player.playerProfileId}#${inning.inning}`]: {
+                                                        ...prev[`${player.playerProfileId}#${inning.inning}`],
+                                                        [type]: val
+                                                      }
+                                                    }));
+                                                  }}
+                                                  className="bg-black/20 border border-white/10 rounded px-1.5 py-1 text-[10px] focus:outline-none"
+                                                />
+                                              </div>
+                                            ))}
                                           </div>
-                                        ),
+                                          <div className="mt-2 pt-2 border-t border-white/5">
+                                            <select
+                                              onChange={(e) => {
+                                                if (!e.target.value) return;
+                                                const type = e.target.value;
+                                                setPendingPlayerScoreItems(prev => ({
+                                                  ...prev,
+                                                  [`${player.playerProfileId}#${inning.inning}`]: {
+                                                    ...prev[`${player.playerProfileId}#${inning.inning}`],
+                                                    [type]: 0
+                                                  }
+                                                }));
+                                                e.target.value = "";
+                                              }}
+                                              className="w-full bg-black/20 border border-white/10 rounded px-1.5 py-1 text-[10px] focus:outline-none text-slate-400"
+                                            >
+                                              <option value="">+ Add Metric</option>
+                                              <option value="RUNS">RUNS</option>
+                                              <option value="FOURS">FOURS</option>
+                                              <option value="SIXES">SIXES</option>
+                                              <option value="BALLS_FACED">BALLS_FACED</option>
+                                              <option value="WICKETS">WICKETS</option>
+                                              <option value="OVERS_BOWLED">OVERS_BOWLED</option>
+                                              <option value="MAIDEN_OVERS">MAIDEN_OVERS</option>
+                                              <option value="RUNS_CONCEDED">RUNS_CONCEDED</option>
+                                              <option value="CATCHES">CATCHES</option>
+                                              <option value="STUMPINGS">STUMPINGS</option>
+                                              <option value="RUN_OUTS">RUN_OUTS</option>
+                                              <option value="WIDES">WIDES</option>
+                                              <option value="NO_BALLS">NO_BALLS</option>
+                                              <option value="IS_MAN_OF_THE_MATCH">MAN OF MATCH (1/0)</option>
+                                              <option value="IMPACT_PLAYER">IMPACT PLAYER (1/0)</option>
+                                            </select>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {Object.values(inning.items).map((item, idx) => (
+                                            <div
+                                              key={idx}
+                                              className="bg-black/20 border border-white/5 rounded px-1.5 py-0.5 text-[9px] flex items-center gap-1"
+                                            >
+                                              <span className="text-slate-500">{item.scoreCardItemType}:</span>
+                                              <span className="text-white font-mono">{item.value}</span>
+                                            </div>
+                                          ))}
+                                        </div>
                                       )}
                                     </div>
+                                  ))}
+                                  
+                                  {/* Add new inning for player */}
+                                  {editingPlayerScore?.playerProfileId === player.playerProfileId && !player.scoreCard?.[editingPlayerScore.inning] && (
+                                    <div className="mb-4 bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-2">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <p className="text-[10px] text-emerald-400 font-semibold uppercase">New Inning {editingPlayerScore.inning}</p>
+                                        <div className="flex gap-2">
+                                          <button
+                                            onClick={() => setEditingPlayerScore(null)}
+                                            className="text-[9px] font-bold text-slate-500 hover:text-slate-400"
+                                          >
+                                            Cancel
+                                          </button>
+                                          <button
+                                            onClick={() => handleUpdatePlayerScore(player.playerProfileId, team.realTeamId, editingPlayerScore.inning)}
+                                            className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300"
+                                          >
+                                            Create
+                                          </button>
+                                        </div>
+                                      </div>
+                                      <select
+                                        onChange={(e) => {
+                                          if (!e.target.value) return;
+                                          const type = e.target.value;
+                                          setPendingPlayerScoreItems(prev => ({
+                                            ...prev,
+                                            [`${player.playerProfileId}#${editingPlayerScore.inning}`]: {
+                                              ...prev[`${player.playerProfileId}#${editingPlayerScore.inning}`],
+                                              [type]: 0
+                                            }
+                                          }));
+                                        }}
+                                        className="w-full bg-black/20 border border-white/10 rounded px-1.5 py-1 text-[10px] focus:outline-none text-slate-400"
+                                      >
+                                        <option value="">Select First Metric</option>
+                                        <option value="RUNS">RUNS</option>
+                                        <option value="WICKETS">WICKETS</option>
+                                        <option value="BALLS_FACED">BALLS_FACED</option>
+                                      </select>
+                                      <div className="grid grid-cols-2 gap-2 mt-2">
+                                        {Object.entries(pendingPlayerScoreItems[`${player.playerProfileId}#${editingPlayerScore.inning}`] || {}).map(([type, value]) => (
+                                          <div key={type} className="flex flex-col gap-1">
+                                            <label className="text-[8px] text-slate-500 uppercase">{type}</label>
+                                            <input
+                                              type="number"
+                                              placeholder="0"
+                                              onChange={(e) => {
+                                                const val = parseFloat(e.target.value);
+                                                setPendingPlayerScoreItems(prev => ({
+                                                  ...prev,
+                                                  [`${player.playerProfileId}#${editingPlayerScore.inning}`]: {
+                                                    ...prev[`${player.playerProfileId}#${editingPlayerScore.inning}`],
+                                                    [type]: val
+                                                  }
+                                                }));
+                                              }}
+                                              className="bg-black/20 border border-white/10 rounded px-1.5 py-1 text-[10px] focus:outline-none"
+                                            />
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
                                   )}
+                                </div>
                               </div>
                             ))}
                           </div>

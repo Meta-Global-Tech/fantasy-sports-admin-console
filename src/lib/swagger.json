@@ -691,7 +691,8 @@
           "LEG_BUYS",
           "LINEUP_ANNOUNCED",
           "IS_SUBSTITUTE",
-          "IS_MAN_OF_THE_MATCH"
+          "IS_MAN_OF_THE_MATCH",
+          "IMPACT_PLAYER"
         ],
         "type": "string"
       },
@@ -796,6 +797,9 @@
           },
           "IS_MAN_OF_THE_MATCH": {
             "$ref": "#/components/schemas/ScoreCardItem"
+          },
+          "IMPACT_PLAYER": {
+            "$ref": "#/components/schemas/ScoreCardItem"
           }
         },
         "required": [
@@ -822,7 +826,8 @@
           "LEG_BUYS",
           "LINEUP_ANNOUNCED",
           "IS_SUBSTITUTE",
-          "IS_MAN_OF_THE_MATCH"
+          "IS_MAN_OF_THE_MATCH",
+          "IMPACT_PLAYER"
         ],
         "type": "object",
         "description": "Construct a type with a set of properties K of type T"
@@ -1135,6 +1140,9 @@
           },
           "IS_MAN_OF_THE_MATCH": {
             "$ref": "#/components/schemas/ScoreMultiplerItem"
+          },
+          "IMPACT_PLAYER": {
+            "$ref": "#/components/schemas/ScoreMultiplerItem"
           }
         },
         "required": [
@@ -1161,7 +1169,8 @@
           "LEG_BUYS",
           "LINEUP_ANNOUNCED",
           "IS_SUBSTITUTE",
-          "IS_MAN_OF_THE_MATCH"
+          "IS_MAN_OF_THE_MATCH",
+          "IMPACT_PLAYER"
         ],
         "type": "object",
         "description": "Construct a type with a set of properties K of type T"
@@ -4803,6 +4812,43 @@
             }
           }
         }
+      }
+    },
+    "/contests/delete/{matchId}/{contestId}": {
+      "delete": {
+        "operationId": "DeleteContest",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "description": "Delete a contest for a match",
+        "tags": ["Contests"],
+        "security": [
+          {
+            "jwt": ["ADMIN"]
+          }
+        ],
+        "parameters": [
+          {
+            "description": "The match ID",
+            "in": "path",
+            "name": "matchId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "The contest ID",
+            "in": "path",
+            "name": "contestId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     },
     "/banners": {

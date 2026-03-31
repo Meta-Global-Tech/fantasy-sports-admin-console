@@ -22,6 +22,9 @@ import type {
   GetSeriesLeaderboardParams,
   RecalculateSeriesLeaderboardRequest,
   SeriesListResponse,
+  UpdateMatchStatusRequest,
+  UpdateRealTeamScoreCardRequest,
+  UpdatePlayerScoreCardRequest,
 } from "@/types";
 
 // ── Token store ─────────────────────────────────────────────────────────────
@@ -191,5 +194,29 @@ export const seriesApi = {
     data: RecalculateSeriesLeaderboardRequest,
   ): Promise<void> {
     await api.post("/admin/series/recalculate-leaderboard", data);
+  },
+};
+
+export const ownerApi = {
+  async updateMatchStatus(data: UpdateMatchStatusRequest): Promise<void> {
+    await api.patch("/owner/matches/status", data);
+  },
+  async updateRealTeamScoreCard(
+    data: UpdateRealTeamScoreCardRequest,
+  ): Promise<void> {
+    await api.patch("/owner/matches/team-score", data);
+  },
+  async updatePlayerScoreCard(
+    data: UpdatePlayerScoreCardRequest,
+  ): Promise<void> {
+    await api.patch("/owner/matches/player-score", data);
+  },
+  async getMatchWithScore(
+    matchId: string,
+  ): Promise<MatchWithRealTeamsAndContests> {
+    const response = await api.get<MatchWithRealTeamsAndContests>(
+      `/owner/matches/${matchId}`,
+    );
+    return response.data;
   },
 };
