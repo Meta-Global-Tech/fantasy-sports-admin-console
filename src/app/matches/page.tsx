@@ -437,6 +437,32 @@ export default function MatchesPage() {
     });
   };
 
+  const handleDeleteContest = async (contestId: string) => {
+    if (!selectedMatchId) return;
+
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete Contest",
+      message: "Are you sure you want to delete this contest? This action cannot be undone.",
+      variant: "red",
+      onConfirm: async () => {
+        setLoadingDetails(true);
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await adminApi.deleteContest(selectedMatchId, contestId);
+          alert("Contest deleted successfully");
+          // Refresh details
+          await handleMatchClick(selectedMatchId);
+        } catch (err: any) {
+          console.error("Failed to delete contest", err);
+          alert(err.response?.data?.message || "Failed to delete contest");
+        } finally {
+          setLoadingDetails(false);
+        }
+      },
+    });
+  };
+
   const handleUpdateMatchStatus = async (newStatus: MatchStatus) => {
     if (!selectedMatchId) return;
     setIsUpdatingStatus(true);
@@ -1890,6 +1916,16 @@ export default function MatchesPage() {
                               <span>App Link</span>
                               <span>↗</span>
                             </a>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteContest(contest.id);
+                              }}
+                              className="p-1 px-2.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 hover:text-red-400 text-[10px] border border-red-500/20 hover:border-red-500/40 transition-all flex items-center gap-1 font-semibold"
+                              title="Delete Contest"
+                            >
+                              <span>Delete</span>
+                            </button>
                           </div>
                         </div>
                       );

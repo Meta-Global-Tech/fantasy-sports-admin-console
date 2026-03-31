@@ -173,6 +173,9 @@ export const adminApi = {
   ): Promise<void> {
     await api.post("/admin/matches/update-score", data);
   },
+  async deleteContest(matchId: string, contestId: string): Promise<void> {
+    await api.delete(`/contests/delete/${matchId}/${contestId}`);
+  },
 };
 
 export const seriesApi = {
