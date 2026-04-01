@@ -432,6 +432,59 @@ export default function MatchesPage() {
     });
   };
 
+  const handleRecalculateScorecard = async () => {
+    if (!selectedMatchId) return;
+
+    setConfirmModal({
+      isOpen: true,
+      title: "Recalculate Scorecard",
+      message: "Are you sure you want to recalculate the scorecard for this match? This will update dream team points and leaderboard.",
+      variant: "blue",
+      onConfirm: async () => {
+        setLoadingDetails(true);
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await adminApi.recalculateMatchScorecard({ matchId: selectedMatchId });
+          alert("Scorecard recalculation triggered successfully");
+          // Refresh details
+          await handleMatchClick(selectedMatchId);
+        } catch (err: any) {
+          console.error("Failed to recalculate scorecard", err);
+          alert(err.response?.data?.message || "Failed to recalculate scorecard");
+        } finally {
+          setLoadingDetails(false);
+        }
+      },
+    });
+  };
+
+  const handleCreditContestFromCollection = async (contestId: string) => {
+    if (!selectedMatchId) return;
+
+    setConfirmModal({
+      isOpen: true,
+      title: "Credit from Collection",
+      message: "Are you sure you want to credit this contest wallet from the contest collection wallet?",
+      variant: "blue",
+      onConfirm: async () => {
+        setLoadingDetails(true);
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await ownerApi.creditContestFromCollection({ matchId: selectedMatchId, contestId });
+          alert("Contest wallet credited successfully");
+          // Refresh details
+          await handleMatchClick(selectedMatchId);
+          setSelectedContestId(contestId);
+        } catch (err: any) {
+          console.error("Failed to credit contest", err);
+          alert(err.response?.data?.message || "Failed to credit contest");
+        } finally {
+          setLoadingDetails(false);
+        }
+      },
+    });
+  };
+
   const handleDeleteContest = async (contestId: string) => {
     if (!selectedMatchId) return;
 
@@ -1043,7 +1096,13 @@ export default function MatchesPage() {
                             onClick={handleUpdateScoreFromEspn}
                             className="flex-1 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
                           >
-                            Update Score
+                            Update Score From ESPN
+                          </button>
+                          <button
+                            onClick={handleRecalculateScorecard}
+                            className="flex-1 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
+                          >
+                            Recalculate Scorecard
                           </button>
                           <div className="w-full" /> {/* Force next row for auto-finalize if needed */}
                           {autoFinalizeMatches.some(af => af.matchId === selectedMatchId) ? (
@@ -1229,6 +1288,17 @@ export default function MatchesPage() {
                                   className="flex items-center justify-center gap-2 w-full py-2 rounded-lg bg-red-500/20 hover:bg-red-600/30 text-red-400 text-xs font-semibold border border-red-500/30 transition-all shadow-lg shadow-red-500/10"
                                 >
                                   Approve and Refund Contest
+                                </button>
+                              </div>
+                            )}
+
+                            {isOwner && (contest.walletBalance || 0) < (contest.prizePool || 0) && (
+                              <div className="flex flex-col gap-2 mt-2">
+                                <button
+                                  onClick={() => handleCreditContestFromCollection(contest.id)}
+                                  className="flex items-center justify-center gap-2 w-full py-2 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-xs font-semibold border border-purple-500/20 transition-all"
+                                >
+                                  Credit from Collection
                                 </button>
                               </div>
                             )}

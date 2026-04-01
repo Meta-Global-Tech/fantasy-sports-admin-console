@@ -344,6 +344,10 @@ export interface UpdateMatchScoreFromEspnRequest {
   matchId: string;
 }
 
+export interface RecalculateMatchScorecardRequest {
+  matchId: string;
+}
+
 // ── Series Leaderboard ────────────────────────────────────────────────────────
 
 export interface SeriesLeaderboardEntry {
@@ -419,6 +423,11 @@ export interface CreateMatchTeamRequest {
 export interface AddMatchTeamPlayerRequest extends MatchTeamPlayerInput {
   matchId: string;
   realTeamId: string;
+}
+
+export interface CreditContestFromCollectionRequest {
+  matchId: string;
+  contestId: string;
 }
 
 export interface GetWalletTransactionsParams {

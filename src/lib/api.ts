@@ -24,6 +24,8 @@ import type {
   SeriesListResponse,
   UpdateRealTeamScoreCardRequest,
   UpdatePlayerScoreCardRequest,
+  RecalculateMatchScorecardRequest,
+  CreditContestFromCollectionRequest,
   EditMatchTeamRequest,
   DeleteMatchTeamPlayerRequest,
   CreateMatchTeamRequest,
@@ -208,6 +210,11 @@ export const adminApi = {
   ): Promise<void> {
     await api.post("/admin/matches/update-score", data);
   },
+  async recalculateMatchScorecard(
+    data: RecalculateMatchScorecardRequest,
+  ): Promise<void> {
+    await api.post("/admin/matches/recalculate-scorecard", data);
+  },
   async deleteContest(matchId: string, contestId: string): Promise<void> {
     await api.delete(`/contests/delete/${matchId}/${contestId}`);
   },
@@ -298,5 +305,11 @@ export const ownerApi = {
   },
   async deleteMatchTeam(matchId: string, realTeamId: string): Promise<void> {
     await api.delete(`/owner/matches/${matchId}/teams/${realTeamId}`);
+  },
+  async creditContestFromCollection(
+    data: CreditContestFromCollectionRequest,
+  ): Promise<void> {
+    const { contestId, ...body } = data;
+    await api.post(`/owner/contests/${contestId}/credit-from-collection`, body);
   },
 };

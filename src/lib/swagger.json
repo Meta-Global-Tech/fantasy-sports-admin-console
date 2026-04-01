@@ -4138,6 +4138,49 @@
         }
       }
     },
+    "/owner/contests/{contestId}/credit-from-collection": {
+      "post": {
+        "operationId": "CreditContestWalletFromCollection",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "description": "Credit contest wallet from CONTEST_COLLECTION",
+        "tags": ["Owner"],
+        "security": [
+          {
+            "jwt": ["OWNER"]
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "contestId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "matchId": {
+                    "type": "string"
+                  }
+                },
+                "required": ["matchId"],
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
     "/matches/new": {
       "get": {
         "operationId": "GetNewMatches",
@@ -5874,6 +5917,40 @@
           }
         },
         "description": "Trigger score update from ESPN for a specific match",
+        "tags": ["Admin"],
+        "security": [
+          {
+            "jwt": ["ADMIN"]
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "matchId": {
+                    "type": "string"
+                  }
+                },
+                "required": ["matchId"],
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/matches/recalculate-scorecard": {
+      "post": {
+        "operationId": "RecalculateScorecard",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "description": "Recalculate scorecard for a specific match",
         "tags": ["Admin"],
         "security": [
           {
