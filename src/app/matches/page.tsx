@@ -15,12 +15,15 @@ import type {
   AutoFinalizeMatch,
   InningScore,
   ScoreCardInning,
+  PlayerProfile,
+  PlayerSecondRole,
 } from "@/types";
 import { MatchCard } from "@/components/MatchCard";
 import { CreateContestForm } from "@/components/CreateContestForm";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { CONTEST_STATUS_COLORS } from "@/lib/utils";
 import { adminApi } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 // ── Components ───────────────────────────────────────────────────────────────
 
@@ -149,6 +152,8 @@ const TRANSACTION_FILTERS: {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function MatchesPage() {
+  const { user } = useAuth();
+  const isOwner = user?.role === "OWNER";
   const today = new Date();
   const [fromDate, setFromDate] = useState(toDateInputValue(today));
   const [toDate, setToDate] = useState(
@@ -178,13 +183,40 @@ export default function MatchesPage() {
     null,
   );
   const [isCreatingContest, setIsCreatingContest] = useState(false);
-  const [updatingPricePlayerId, setUpdatingPricePlayerId] = useState<string | null>(null);
-  const [pendingPlayerPrices, setPendingPlayerPrices] = useState<Record<string, string>>({});
   const [editingTeamScore, setEditingTeamScore] = useState<{ realTeamId: string; inning: number } | null>(null);
   const [editingPlayerScore, setEditingPlayerScore] = useState<{ playerProfileId: string; inning: number } | null>(null);
   const [pendingInningScores, setPendingInningScores] = useState<Record<string, Partial<InningScore>>>({});
   const [pendingPlayerScoreItems, setPendingPlayerScoreItems] = useState<Record<string, Record<string, string | number>>>({});
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [editingPlayer, setEditingPlayer] = useState<{
+    matchId: string;
+    realTeamId: string;
+    playerProfileId: string;
+    name: string;
+    playerRole: string;
+    playerSecondRole: string;
+    price: number;
+    espnId?: string;
+    imageUrl?: string;
+  } | null>(null);
+  const [editingTeamInfo, setEditingTeamInfo] = useState<{
+    matchId: string;
+    realTeamId: string;
+    name: string;
+    shortName: string;
+    logoURL: string;
+  } | null>(null);
+  const [isAddingTeam, setIsAddingTeam] = useState(false);
+  const [newTeamData, setNewTeamData] = useState({ name: "", shortName: "", logoURL: "" });
+  const [isAddingPlayerToTeamId, setIsAddingPlayerToTeamId] = useState<string | null>(null);
+  const [playerProfiles, setPlayerProfiles] = useState<PlayerProfile[]>([]);
+  const [playerSearchQuery, setPlayerSearchQuery] = useState("");
+  const [selectedPlayerProfile, setSelectedPlayerProfile] = useState<PlayerProfile | null>(null);
+  const [newPlayerData, setNewPlayerData] = useState({
+    playerSecondRole: "BATTER" as PlayerSecondRole,
+    price: 0,
+    espnId: "",
+    imageUrl: ""
+  });
 
   // Modal state
   const [confirmModal, setConfirmModal] = useState<{
@@ -312,43 +344,6 @@ export default function MatchesPage() {
     setIsCreatingContest(false);
   };
 
-  const handleUpdatePlayerPrice = async (
-    matchId: string,
-    realTeamId: string,
-    playerProfileId: string,
-  ) => {
-    const priceStr = pendingPlayerPrices[playerProfileId];
-    const price = parseFloat(priceStr);
-    if (isNaN(price)) {
-      alert("Please enter a valid price");
-      return;
-    }
-
-    try {
-      setUpdatingPricePlayerId(playerProfileId);
-      await adminApi.updateRealTeamPlayerPrice({
-        matchId,
-        realTeamIdPlayerProfileId: `${realTeamId}#${playerProfileId}`,
-        price,
-      });
-
-      // Refresh match details to show updated price
-      const details = await matchesApi.getAllContestsByMatchId(matchId);
-      setSelectedMatchDetails(details);
-      
-      setUpdatingPricePlayerId(null);
-      setPendingPlayerPrices(prev => {
-        const next = { ...prev };
-        delete next[playerProfileId];
-        return next;
-      });
-    } catch (err: any) {
-      console.error("Failed to update player price", err);
-      alert(err.response?.data?.message || "Failed to update player price");
-      setUpdatingPricePlayerId(null);
-    }
-  };
-
   const handleTriggerFinalization = async () => {
     if (!selectedMatchId) return;
 
@@ -463,23 +458,6 @@ export default function MatchesPage() {
     });
   };
 
-  const handleUpdateMatchStatus = async (newStatus: MatchStatus) => {
-    if (!selectedMatchId) return;
-    setIsUpdatingStatus(true);
-    try {
-      await ownerApi.updateMatchStatus({ matchId: selectedMatchId, status: newStatus });
-      // Refresh current match details
-      const details = await matchesApi.getAllContestsByMatchId(selectedMatchId);
-      setSelectedMatchDetails(details);
-      // Also update the match in matches list if it's there
-      setMatches(prev => prev.map(m => m.id === selectedMatchId ? { ...m, status: newStatus } : m));
-    } catch (err: any) {
-      console.error("Failed to update match status", err);
-      alert(err.response?.data?.message || "Failed to update status");
-    } finally {
-      setIsUpdatingStatus(false);
-    }
-  };
 
   const handleUpdateTeamScore = async (realTeamId: string, inning: number) => {
     if (!selectedMatchId || !selectedMatchDetails) return;
@@ -569,6 +547,180 @@ export default function MatchesPage() {
     } finally {
       setLoadingDetails(false);
     }
+  };
+
+  const handleDeleteMatchTeamPlayer = async (matchId: string, realTeamId: string, playerProfileId: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete Player From Team",
+      message: "Are you sure you want to remove this player from the team for this match? This action cannot be undone.",
+      variant: "red",
+      onConfirm: async () => {
+        setLoadingDetails(true);
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await ownerApi.deleteMatchTeamPlayer({ matchId, realTeamId, playerProfileId });
+          alert("Player removed successfully");
+          // Refresh details
+          await handleMatchClick(matchId);
+        } catch (err: any) {
+          console.error("Failed to remove player", err);
+          alert(err.response?.data?.message || "Failed to remove player from team");
+        } finally {
+          setLoadingDetails(false);
+        }
+      },
+    });
+  };
+
+  const handleCreateMatchTeam = async () => {
+    if (!selectedMatchId || !newTeamData.name || !newTeamData.shortName) return;
+    try {
+      setLoadingDetails(true);
+      await ownerApi.createMatchTeam({
+        matchId: selectedMatchId,
+        ...newTeamData
+      });
+      alert("Team created successfully");
+      setIsAddingTeam(false);
+      setNewTeamData({ name: "", shortName: "", logoURL: "" });
+      await handleMatchClick(selectedMatchId);
+    } catch (err: any) {
+      console.error("Failed to create team", err);
+      alert(err.response?.data?.message || "Failed to create team");
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  const handleAddPlayerToTeam = async () => {
+    if (!selectedMatchId || !isAddingPlayerToTeamId || !selectedPlayerProfile) return;
+    try {
+      setLoadingDetails(true);
+      await ownerApi.addMatchTeamPlayer({
+        matchId: selectedMatchId,
+        realTeamId: isAddingPlayerToTeamId,
+        playerProfileId: selectedPlayerProfile.playerProfileId,
+        playerSecondRole: newPlayerData.playerSecondRole,
+        price: newPlayerData.price || selectedPlayerProfile.defaultPrice || 0,
+        espnId: newPlayerData.espnId || selectedPlayerProfile.espnId,
+        imageUrl: newPlayerData.imageUrl || selectedPlayerProfile.imageUrl
+      });
+      alert("Player added successfully");
+      setIsAddingPlayerToTeamId(null);
+      setSelectedPlayerProfile(null);
+      setNewPlayerData({ playerSecondRole: "BATTER", price: 0, espnId: "", imageUrl: "" });
+      await handleMatchClick(selectedMatchId);
+    } catch (err: any) {
+      console.error("Failed to add player", err);
+      alert(err.response?.data?.message || "Failed to add player");
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  const handleDeleteMatchTeam = async (matchId: string, realTeamId: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete Team",
+      message: "Are you sure you want to delete this team? This will fail if any players are referenced in dream teams. This action cannot be undone.",
+      variant: "red",
+      onConfirm: async () => {
+        setLoadingDetails(true);
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          await ownerApi.deleteMatchTeam(matchId, realTeamId);
+          alert("Team deleted successfully");
+          await handleMatchClick(matchId);
+        } catch (err: any) {
+          console.error("Failed to delete team", err);
+          alert(err.response?.data?.message || "Failed to delete team. It might be referenced in dream teams.");
+        } finally {
+          setLoadingDetails(false);
+        }
+      },
+    });
+  };
+
+  const fetchPlayerProfiles = async (query: string) => {
+    if (query.length < 2) {
+      setPlayerProfiles([]);
+      return;
+    }
+    try {
+      const data = await adminApi.getAllPlayerProfiles({ 
+        pageSize: 50,
+        playerName: query
+      });
+      setPlayerProfiles(data.items || []);
+    } catch (err) {
+      console.error("Failed to fetch player profiles", err);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (playerSearchQuery) {
+        fetchPlayerProfiles(playerSearchQuery);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [playerSearchQuery]);
+
+  const handleEditMatchTeam = async (data: {
+    matchId: string;
+    realTeamId: string;
+    name?: string;
+    shortName?: string;
+    logoURL?: string;
+    players?: any[];
+  }) => {
+    try {
+      setLoadingDetails(true);
+      await ownerApi.editMatchTeam(data);
+      alert("Team updated successfully");
+      // Refresh details
+      await handleMatchClick(data.matchId);
+      setEditingPlayer(null);
+      setEditingTeamInfo(null);
+    } catch (err: any) {
+      console.error("Failed to update team", err);
+      alert(err.response?.data?.message || "Failed to update team info");
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  // Helper to update just one player by sending the whole list (diff-based)
+  const updateSinglePlayerInTeam = async (playerUpdate: any) => {
+    if (!selectedMatchDetails) return;
+    const team = selectedMatchDetails.teams.find(t => t.realTeamId === playerUpdate.realTeamId);
+    if (!team) return;
+
+    const playersPayload = team.players.map(p => {
+      if (p.playerProfileId === playerUpdate.playerProfileId) {
+        return {
+          playerProfileId: p.playerProfileId,
+          playerSecondRole: playerUpdate.playerSecondRole,
+          price: playerUpdate.price,
+          espnId: playerUpdate.espnId,
+          imageUrl: playerUpdate.imageUrl
+        };
+      }
+      return {
+        playerProfileId: p.playerProfileId,
+        playerSecondRole: p.playerSecondRole,
+        price: p.price,
+        espnId: p.espnId,
+        imageUrl: p.imageUrl
+      };
+    });
+
+    await handleEditMatchTeam({
+      matchId: playerUpdate.matchId,
+      realTeamId: playerUpdate.realTeamId,
+      players: playersPayload
+    });
   };
 
   // Fetch when dates change
@@ -800,18 +952,9 @@ export default function MatchesPage() {
                         {selectedMatchDetails && (
                           <div className="flex flex-col items-end gap-1">
                             <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Status</span>
-                            <select
-                              value={selectedMatchDetails.status}
-                              disabled={isUpdatingStatus}
-                              onChange={(e) => handleUpdateMatchStatus(e.target.value as MatchStatus)}
-                              className="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold py-1 px-2 rounded border border-emerald-500/20 focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
-                            >
-                              {STATUS_FILTERS.filter(f => f.value !== "ALL").map(f => (
-                                <option key={f.value} value={f.value} className="bg-[#0d0d14] text-white">
-                                  {f.label}
-                                </option>
-                              ))}
-                            </select>
+                            <div className="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold py-1 px-2 rounded border border-emerald-500/20">
+                              {selectedMatchDetails.status}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -1343,48 +1486,194 @@ export default function MatchesPage() {
                     })()
                   ) : activeSideTab === "teams" ? (
                     <div className="flex flex-col gap-6 w-full">
+                      {/* Add Team Button */}
+                      {!isAddingTeam && (
+                        <button
+                          onClick={() => {
+                            setIsAddingTeam(true);
+                            setNewTeamData({ name: "", shortName: "", logoURL: "" });
+                          }}
+                          className="w-full py-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/20 transition-all flex items-center justify-center gap-2"
+                        >
+                          <span className="text-base">+</span> Add Team to Match
+                        </button>
+                      )}
+
+                      {/* Add Team Form */}
+                      {isAddingTeam && (
+                        <div className="bg-[#101018] border border-emerald-500/20 rounded-xl p-4 shadow-lg shadow-emerald-500/5">
+                          <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            Create New Team
+                          </h3>
+                          <div className="grid grid-cols-2 gap-3 mb-4">
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[10px] text-slate-500 uppercase font-bold">Team Name</label>
+                              <input
+                                type="text"
+                                placeholder="e.g. India"
+                                value={newTeamData.name}
+                                onChange={(e) => setNewTeamData({ ...newTeamData, name: e.target.value })}
+                                className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-all"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[10px] text-slate-500 uppercase font-bold">Short Name</label>
+                              <input
+                                type="text"
+                                placeholder="e.g. IND"
+                                value={newTeamData.shortName}
+                                onChange={(e) => setNewTeamData({ ...newTeamData, shortName: e.target.value })}
+                                className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-all"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1 col-span-2">
+                              <label className="text-[10px] text-slate-500 uppercase font-bold">Logo URL</label>
+                              <input
+                                type="text"
+                                placeholder="https://..."
+                                value={newTeamData.logoURL}
+                                onChange={(e) => setNewTeamData({ ...newTeamData, logoURL: e.target.value })}
+                                className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-all"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setIsAddingTeam(false)}
+                              className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 text-xs font-bold border border-white/10 transition-all"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={handleCreateMatchTeam}
+                              disabled={!newTeamData.name || !newTeamData.shortName}
+                              className="flex-2 py-2 px-4 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-bold border border-emerald-500/30 transition-all disabled:opacity-50"
+                            >
+                              Create Team
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       {selectedMatchDetails.teams?.map((team) => (
                         <div
                           key={team.realTeamId}
                           className="bg-[#101018] border border-white/5 rounded-xl p-4"
                         >
                           <div className="flex items-center gap-3 mb-4 border-b border-white/5 pb-3">
-                            {team.logoURL ? (
-                              <img
-                                src={team.logoURL}
-                                alt={team.teamName}
-                                className="w-8 h-8 rounded-full bg-white/10"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs">
-                                ?
+                            {editingTeamInfo?.realTeamId === team.realTeamId ? (
+                              <div className="flex flex-col gap-3 w-full">
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div className="flex flex-col gap-1">
+                                    <label className="text-[8px] text-slate-500 uppercase">Team Name</label>
+                                    <input
+                                      type="text"
+                                      value={editingTeamInfo.name}
+                                      onChange={(e) => setEditingTeamInfo({ ...editingTeamInfo, name: e.target.value })}
+                                      className="bg-black/20 border border-white/10 rounded px-1.5 py-1 text-[10px] text-white focus:outline-none"
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-1">
+                                    <label className="text-[8px] text-slate-500 uppercase">Short Name</label>
+                                    <input
+                                      type="text"
+                                      value={editingTeamInfo.shortName}
+                                      onChange={(e) => setEditingTeamInfo({ ...editingTeamInfo, shortName: e.target.value })}
+                                      className="bg-black/20 border border-white/10 rounded px-1.5 py-1 text-[10px] text-white focus:outline-none"
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-1 col-span-2">
+                                    <label className="text-[8px] text-slate-500 uppercase">Logo URL</label>
+                                    <input
+                                      type="text"
+                                      value={editingTeamInfo.logoURL}
+                                      onChange={(e) => setEditingTeamInfo({ ...editingTeamInfo, logoURL: e.target.value })}
+                                      className="bg-black/20 border border-white/10 rounded px-1.5 py-1 text-[10px] text-white focus:outline-none"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => setEditingTeamInfo(null)}
+                                    className="flex-1 py-1 px-2 rounded bg-white/5 hover:bg-white/10 text-slate-400 text-[10px] font-bold border border-white/10"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    onClick={() => handleEditMatchTeam({
+                                      matchId: editingTeamInfo.matchId,
+                                      realTeamId: editingTeamInfo.realTeamId,
+                                      name: editingTeamInfo.name,
+                                      shortName: editingTeamInfo.shortName,
+                                      logoURL: editingTeamInfo.logoURL
+                                    })}
+                                    className="flex-1 py-1 px-2 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/20 shadow-emerald-500/10"
+                                  >
+                                    Save Team
+                                  </button>
+                                </div>
                               </div>
+                            ) : (
+                              <>
+                                {team.logoURL ? (
+                                  <img
+                                    src={team.logoURL}
+                                    alt={team.teamName}
+                                    className="w-8 h-8 rounded-full bg-white/10"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs">
+                                    ?
+                                  </div>
+                                )}
+                                <div className="flex-1">
+                                  <h3 className="text-sm font-bold text-white">
+                                    {team.teamName}{" "}
+                                    <span className="text-slate-500 text-xs font-normal">
+                                      ({team.shortName})
+                                    </span>
+                                  </h3>
+                                </div>
+                                <button
+                                  onClick={() => setEditingTeamInfo({
+                                    matchId: selectedMatchDetails.id,
+                                    realTeamId: team.realTeamId,
+                                    name: team.teamName,
+                                    shortName: team.shortName || "",
+                                    logoURL: team.logoURL
+                                  })}
+                                  className="text-[9px] font-bold text-blue-400 hover:text-blue-300"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteMatchTeam(selectedMatchDetails.id, team.realTeamId)}
+                                  className="text-[9px] font-bold text-red-500 hover:text-red-400"
+                                >
+                                  Delete
+                                </button>
+                              </>
                             )}
-                            <div>
-                              <h3 className="text-sm font-bold text-white">
-                                {team.teamName}{" "}
-                                <span className="text-slate-500 text-xs font-normal">
-                                  ({team.shortName})
-                                </span>
-                              </h3>
-                            </div>
                           </div>
 
                           {/* Team Scorecards */}
                           <div className="mb-4">
                             <div className="flex items-center justify-between mb-2">
                               <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Team Score</h4>
-                              <button
-                                onClick={() => {
-                                  const currentInnings = team.scoreCard ? Object.keys(team.scoreCard).length : 0;
-                                  const nextInning = currentInnings + 1;
-                                  setEditingTeamScore({ realTeamId: team.realTeamId, inning: nextInning });
-                                  setPendingInningScores({ [`${team.realTeamId}#${nextInning}`]: { runs: 0, wickets: 0, overs: 0 } });
-                                }}
-                                className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
-                              >
-                                + Add Inning
-                              </button>
+                              {isOwner && (
+                                <button
+                                  onClick={() => {
+                                    const currentInnings = team.scoreCard ? Object.keys(team.scoreCard).length : 0;
+                                    const nextInning = currentInnings + 1;
+                                    setEditingTeamScore({ realTeamId: team.realTeamId, inning: nextInning });
+                                    setPendingInningScores({ [`${team.realTeamId}#${nextInning}`]: { runs: 0, wickets: 0, overs: 0 } });
+                                  }}
+                                  className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
+                                >
+                                  + Add Inning
+                                </button>
+                              )}
                             </div>
                             <div className="flex flex-col gap-2">
                               {team.scoreCard && Object.values(team.scoreCard).map((inning) => (
@@ -1407,7 +1696,7 @@ export default function MatchesPage() {
                                             Save
                                           </button>
                                         </>
-                                      ) : (
+                                      ) : isOwner ? (
                                         <button
                                           onClick={() => {
                                             setEditingTeamScore({ realTeamId: team.realTeamId, inning: inning.inning });
@@ -1417,7 +1706,7 @@ export default function MatchesPage() {
                                         >
                                           Edit
                                         </button>
-                                      )}
+                                      ) : null}
                                     </div>
                                   </div>
                                   
@@ -1517,9 +1806,119 @@ export default function MatchesPage() {
 
                           {/* Team players */}
                           <div className="flex flex-col gap-2">
-                            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 mt-1">
-                              Players
-                            </h4>
+                            <div className="flex items-center justify-between mb-2 mt-1">
+                              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                Players
+                              </h4>
+                              <button
+                                onClick={() => {
+                                  setIsAddingPlayerToTeamId(team.realTeamId);
+                                  setSelectedPlayerProfile(null);
+                                  setPlayerSearchQuery("");
+                                  setNewPlayerData({ playerSecondRole: "BATTER", price: 0, espnId: "", imageUrl: "" });
+                                }}
+                                className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
+                              >
+                                + Add Player
+                              </button>
+                            </div>
+
+                            {/* Add Player Form */}
+                            {isAddingPlayerToTeamId === team.realTeamId && (
+                              <div className="bg-black/30 border border-emerald-500/20 rounded-lg p-3 mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                <p className="text-[10px] font-bold text-white mb-2 uppercase">Add Player to {team.shortName || team.teamName}</p>
+                                
+                                {!selectedPlayerProfile ? (
+                                  <div className="flex flex-col gap-2">
+                                    <input
+                                      type="text"
+                                      placeholder="Search player profile (min 2 chars)..."
+                                      value={playerSearchQuery}
+                                      onChange={(e) => setPlayerSearchQuery(e.target.value)}
+                                      className="w-full bg-black/40 border border-white/10 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500/50"
+                                    />
+                                    {playerProfiles.length > 0 && (
+                                      <div className="max-h-40 overflow-y-auto bg-black/60 rounded border border-white/10">
+                                        {playerProfiles.map(p => (
+                                          <button
+                                            key={p.playerProfileId}
+                                            onClick={() => {
+                                              setSelectedPlayerProfile(p);
+                                              setNewPlayerData({
+                                                playerSecondRole: p.defaultPlayerSecondRole || "BATTER",
+                                                price: p.defaultPrice || 0,
+                                                espnId: p.espnId || "",
+                                                imageUrl: p.imageUrl || ""
+                                              });
+                                            }}
+                                            className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-white/5 border-b border-white/5 last:border-0 flex items-center justify-between"
+                                          >
+                                            <span>{p.name}</span>
+                                            <span className="text-[8px] bg-white/10 px-1 rounded">{p.country || "N/A"}</span>
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="flex flex-col gap-3">
+                                    <div className="flex items-center gap-2 bg-white/5 p-2 rounded border border-white/5">
+                                      {selectedPlayerProfile.imageUrl && (
+                                        <img src={selectedPlayerProfile.imageUrl} className="w-6 h-6 rounded-full" />
+                                      )}
+                                      <span className="text-xs text-white font-semibold">{selectedPlayerProfile.name}</span>
+                                      <button 
+                                        onClick={() => setSelectedPlayerProfile(null)}
+                                        className="ml-auto text-[8px] text-slate-500 hover:text-white"
+                                      >
+                                        Change
+                                      </button>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div className="flex flex-col gap-1">
+                                        <label className="text-[8px] text-slate-500 uppercase">Role</label>
+                                        <select
+                                          value={newPlayerData.playerSecondRole}
+                                          onChange={(e) => setNewPlayerData({ ...newPlayerData, playerSecondRole: e.target.value as any })}
+                                          className="bg-black/40 border border-white/10 rounded px-1.5 py-1 text-[10px] text-white focus:outline-none"
+                                        >
+                                          <option value="BATTER">BATTER</option>
+                                          <option value="BOWLER">BOWLER</option>
+                                          <option value="ALLROUNDER">ALLROUNDER</option>
+                                          <option value="WICKETKEEPER">WICKETKEEPER</option>
+                                        </select>
+                                      </div>
+                                      <div className="flex flex-col gap-1">
+                                        <label className="text-[8px] text-slate-500 uppercase">Price</label>
+                                        <input
+                                          type="number"
+                                          value={newPlayerData.price}
+                                          onChange={(e) => setNewPlayerData({ ...newPlayerData, price: parseFloat(e.target.value) })}
+                                          className="bg-black/40 border border-white/10 rounded px-1.5 py-1 text-[10px] text-white focus:outline-none"
+                                        />
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={() => setIsAddingPlayerToTeamId(null)}
+                                        className="flex-1 py-1.5 rounded bg-white/5 hover:bg-white/10 text-slate-400 text-[10px] font-bold"
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        onClick={handleAddPlayerToTeam}
+                                        className="flex-1 py-1.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-[10px] font-bold border border-emerald-500/30"
+                                      >
+                                        Add Player
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
                             {team.players?.map((player) => (
                               <div
                                 key={player.playerProfileId}
@@ -1559,43 +1958,135 @@ export default function MatchesPage() {
                                   </div>
                                 </div>
 
-                                {/* Update Price - Only for PREMATCH or SETTINGUP matches */}
-                                {(selectedMatchDetails.status === "PREMATCH" || selectedMatchDetails.status === "SETTINGUP") && (
-                                  <div className="mt-3 pt-3 border-t border-white/5 flex items-center gap-2">
-                                    <input
-                                      type="number"
-                                      placeholder="Price"
-                                      defaultValue={player.price}
-                                      onChange={(e) => {
-                                        setPendingPlayerPrices(prev => ({ ...prev, [player.playerProfileId]: e.target.value }));
-                                      }}
-                                      className="w-16 bg-black/20 border border-white/10 rounded px-1.5 py-1 text-[10px] focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
-                                    />
-                                    <button
-                                      onClick={() => handleUpdatePlayerPrice(selectedMatchDetails.id, team.realTeamId, player.playerProfileId)}
-                                      disabled={updatingPricePlayerId === player.playerProfileId}
-                                      className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded border border-emerald-500/20 transition-all disabled:opacity-50"
-                                    >
-                                      {updatingPricePlayerId === player.playerProfileId ? "..." : "Set Price"}
-                                    </button>
-                                  </div>
-                                )}
+                                {/* Admin Actions: Edit & Delete */}
+                                <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between gap-2">
+                                  {editingPlayer?.playerProfileId === player.playerProfileId ? (
+                                    <div className="flex flex-col gap-3 w-full">
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <div className="flex flex-col gap-1">
+                                          <label className="text-[8px] text-slate-500 uppercase">Name</label>
+                                          <input
+                                            type="text"
+                                            value={editingPlayer.name}
+                                            onChange={(e) => setEditingPlayer({ ...editingPlayer, name: e.target.value })}
+                                            className="bg-black/20 border border-white/10 rounded px-1.5 py-1 text-[10px] text-white focus:outline-none"
+                                          />
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                          <label className="text-[8px] text-slate-500 uppercase">Price</label>
+                                          <input
+                                            type="number"
+                                            value={editingPlayer.price}
+                                            onChange={(e) => setEditingPlayer({ ...editingPlayer, price: parseFloat(e.target.value) })}
+                                            className="bg-black/20 border border-white/10 rounded px-1.5 py-1 text-[10px] text-white focus:outline-none"
+                                          />
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                          <label className="text-[8px] text-slate-500 uppercase">Role</label>
+                                          <select
+                                            value={editingPlayer.playerRole}
+                                            onChange={(e) => setEditingPlayer({ ...editingPlayer, playerRole: e.target.value })}
+                                            className="bg-black/20 border border-white/10 rounded px-1.5 py-1 text-[10px] text-white focus:outline-none"
+                                          >
+                                            <option value="MEMBER">MEMBER</option>
+                                            <option value="CAPTAIN">CAPTAIN</option>
+                                            <option value="VICECAPTAIN">VICECAPTAIN</option>
+                                          </select>
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                          <label className="text-[8px] text-slate-500 uppercase">Type</label>
+                                          <select
+                                            value={editingPlayer.playerSecondRole}
+                                            onChange={(e) => setEditingPlayer({ ...editingPlayer, playerSecondRole: e.target.value })}
+                                            className="bg-black/20 border border-white/10 rounded px-1.5 py-1 text-[10px] text-white focus:outline-none"
+                                          >
+                                            <option value="BATTER">BATTER</option>
+                                            <option value="BOWLER">BOWLER</option>
+                                            <option value="ALLROUNDER">ALLROUNDER</option>
+                                            <option value="WICKETKEEPER">WICKETKEEPER</option>
+                                          </select>
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                          <label className="text-[8px] text-slate-500 uppercase">ESPN ID</label>
+                                          <input
+                                            type="text"
+                                            value={editingPlayer.espnId || ""}
+                                            onChange={(e) => setEditingPlayer({ ...editingPlayer, espnId: e.target.value })}
+                                            className="bg-black/20 border border-white/10 rounded px-1.5 py-1 text-[10px] text-white focus:outline-none"
+                                          />
+                                        </div>
+                                        <div className="flex flex-col gap-1 col-span-2">
+                                          <label className="text-[8px] text-slate-500 uppercase">Image URL</label>
+                                          <input
+                                            type="text"
+                                            value={editingPlayer.imageUrl || ""}
+                                            onChange={(e) => setEditingPlayer({ ...editingPlayer, imageUrl: e.target.value })}
+                                            className="bg-black/20 border border-white/10 rounded px-1.5 py-1 text-[10px] text-white focus:outline-none"
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <button
+                                          onClick={() => setEditingPlayer(null)}
+                                          className="flex-1 py-1 px-2 rounded bg-white/5 hover:bg-white/10 text-slate-400 text-[10px] font-bold transition-all border border-white/10"
+                                        >
+                                          Cancel
+                                        </button>
+                                        <button
+                                          onClick={() => updateSinglePlayerInTeam(editingPlayer)}
+                                          className="flex-1 py-1 px-2 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-bold transition-all border border-emerald-500/20 shadow-emerald-500/10"
+                                        >
+                                          Save Changes
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <div className="flex gap-1.5">
+                                        <button
+                                          onClick={() => setEditingPlayer({
+                                            matchId: selectedMatchDetails.id,
+                                            realTeamId: team.realTeamId,
+                                            playerProfileId: player.playerProfileId,
+                                            name: player.name,
+                                            playerRole: player.playerRole,
+                                            playerSecondRole: player.playerSecondRole,
+                                            price: player.price,
+                                            espnId: player.espnId,
+                                            imageUrl: player.imageUrl
+                                          })}
+                                          className="px-2.5 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-[9px] font-bold rounded border border-blue-500/20 transition-all flex items-center gap-1"
+                                        >
+                                          <span>Edit Player</span>
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteMatchTeamPlayer(selectedMatchDetails.id, team.realTeamId, player.playerProfileId)}
+                                          className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-bold rounded border border-red-500/20 transition-all flex items-center gap-1"
+                                        >
+                                          <span>Remove</span>
+                                        </button>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
 
                                 {/* Player Scorecards */}
                                 <div className="mt-3 pt-3 border-t border-white/5">
                                   <div className="flex items-center justify-between mb-2">
                                     <h4 className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Scorecard</h4>
-                                    <button
-                                      onClick={() => {
-                                        const currentInnings = player.scoreCard ? Object.keys(player.scoreCard).length : 0;
-                                        const nextInning = currentInnings + 1;
-                                        setEditingPlayerScore({ playerProfileId: player.playerProfileId, inning: nextInning });
-                                        setPendingPlayerScoreItems({ [`${player.playerProfileId}#${nextInning}`]: {} });
-                                      }}
-                                      className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
-                                    >
-                                      + Inning
-                                    </button>
+                                    {isOwner && (
+                                      <button
+                                        onClick={() => {
+                                          const currentInnings = player.scoreCard ? Object.keys(player.scoreCard).length : 0;
+                                          const nextInning = currentInnings + 1;
+                                          setEditingPlayerScore({ playerProfileId: player.playerProfileId, inning: nextInning });
+                                          setPendingPlayerScoreItems({ [`${player.playerProfileId}#${nextInning}`]: {} });
+                                        }}
+                                        className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
+                                      >
+                                        + Inning
+                                      </button>
+                                    )}
                                   </div>
                                   {player.scoreCard && Object.values(player.scoreCard).map((inning) => (
                                     <div key={inning.inning} className="mb-4 bg-white/5 border border-white/5 rounded-lg p-2">
@@ -1617,7 +2108,7 @@ export default function MatchesPage() {
                                                 Save
                                               </button>
                                             </>
-                                          ) : (
+                                          ) : isOwner ? (
                                             <button
                                               onClick={() => {
                                                 setEditingPlayerScore({ playerProfileId: player.playerProfileId, inning: inning.inning });
@@ -1631,7 +2122,7 @@ export default function MatchesPage() {
                                             >
                                               Edit
                                             </button>
-                                          )}
+                                          ) : null}
                                         </div>
                                       </div>
                                       

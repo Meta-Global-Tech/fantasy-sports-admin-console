@@ -22,9 +22,13 @@ import type {
   GetSeriesLeaderboardParams,
   RecalculateSeriesLeaderboardRequest,
   SeriesListResponse,
-  UpdateMatchStatusRequest,
   UpdateRealTeamScoreCardRequest,
   UpdatePlayerScoreCardRequest,
+  EditMatchTeamRequest,
+  DeleteMatchTeamPlayerRequest,
+  CreateMatchTeamRequest,
+  AddMatchTeamPlayerRequest,
+  User,
 } from "@/types";
 
 // ── Token store ─────────────────────────────────────────────────────────────
@@ -44,6 +48,32 @@ export function setAccessToken(token: string | null) {
 export function getAccessToken(): string | null {
   if (typeof window !== "undefined") {
     return localStorage.getItem(TOKEN_KEY);
+  }
+  return null;
+}
+
+const USER_INFO_KEY = "procrick_user_info";
+
+export function setUserInfo(user: User | null) {
+  if (typeof window !== "undefined") {
+    if (user) {
+      localStorage.setItem(USER_INFO_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(USER_INFO_KEY);
+    }
+  }
+}
+
+export function getUserInfo(): User | null {
+  if (typeof window !== "undefined") {
+    const info = localStorage.getItem(USER_INFO_KEY);
+    if (info) {
+      try {
+        return JSON.parse(info) as User;
+      } catch (err) {
+        return null;
+      }
+    }
   }
   return null;
 }
@@ -89,12 +119,14 @@ api.interceptors.response.use(
 export const authApi = {
   async login(data: LoginRequest): Promise<LoginResponse> {
     const response = await api.post<LoginResponse>("/auth/login", data);
-    const { accessToken } = response.data;
+    const { accessToken, user } = response.data;
     setAccessToken(accessToken);
+    setUserInfo(user);
     return response.data;
   },
   async logout() {
     setAccessToken(null);
+    setUserInfo(null);
   },
 };
 
@@ -201,9 +233,6 @@ export const seriesApi = {
 };
 
 export const ownerApi = {
-  async updateMatchStatus(data: UpdateMatchStatusRequest): Promise<void> {
-    await api.patch("/owner/matches/status", data);
-  },
   async updateRealTeamScoreCard(
     data: UpdateRealTeamScoreCardRequest,
   ): Promise<void> {
@@ -221,5 +250,36 @@ export const ownerApi = {
       `/owner/matches/${matchId}`,
     );
     return response.data;
+  },
+  async editMatchTeam(data: EditMatchTeamRequest): Promise<void> {
+    const { matchId, realTeamId, ...body } = data;
+    await api.patch(`/owner/matches/${matchId}/teams/${realTeamId}`, body);
+  },
+  async deleteMatchTeamPlayer(data: DeleteMatchTeamPlayerRequest): Promise<void> {
+    const { matchId, realTeamId, playerProfileId } = data;
+    const body = playerProfileId ? { playerProfileId } : undefined;
+    await api.delete(`/owner/matches/${matchId}/teams/${realTeamId}`, {
+      data: body,
+    });
+  },
+  async createMatchTeam(
+    data: CreateMatchTeamRequest,
+  ): Promise<{ realTeamId: string }> {
+    const { matchId, ...body } = data;
+    const response = await api.post<{ realTeamId: string }>(
+      `/owner/matches/${matchId}/teams`,
+      body,
+    );
+    return response.data;
+  },
+  async addMatchTeamPlayer(data: AddMatchTeamPlayerRequest): Promise<void> {
+    const { matchId, realTeamId, ...body } = data;
+    await api.post(
+      `/owner/matches/${matchId}/teams/${realTeamId}/players`,
+      body,
+    );
+  },
+  async deleteMatchTeam(matchId: string, realTeamId: string): Promise<void> {
+    await api.delete(`/owner/matches/${matchId}/teams/${realTeamId}`);
   },
 };

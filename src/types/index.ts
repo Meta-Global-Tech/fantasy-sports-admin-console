@@ -251,6 +251,7 @@ export interface GetMatchesByDateRangeParams {
 export interface GetPlayerProfilesParams {
   pageSize?: number;
   cursor?: string;
+  playerName?: string;
 }
 
 export interface PaginatedPlayerProfilesResponse {
@@ -350,10 +351,6 @@ export interface SeriesListResponse {
   items: string[];
 }
 
-export interface UpdateMatchStatusRequest {
-  status: MatchStatus;
-  matchId: string;
-}
 
 export interface UpdateRealTeamScoreCardRequest {
   scoreCard: Record<number, InningScore>;
@@ -366,4 +363,39 @@ export interface UpdatePlayerScoreCardRequest {
   playerProfileId: string;
   realTeamId: string;
   matchId: string;
+}
+
+export interface MatchTeamPlayerInput {
+  playerProfileId: string;
+  playerSecondRole: PlayerSecondRole;
+  price?: number;
+  espnId?: string;
+  imageUrl?: string;
+}
+
+export interface EditMatchTeamRequest {
+  matchId: string;
+  realTeamId: string;
+  name?: string;
+  shortName?: string;
+  logoURL?: string;
+  players?: MatchTeamPlayerInput[];
+}
+
+export interface DeleteMatchTeamPlayerRequest {
+  matchId: string;
+  realTeamId: string;
+  playerProfileId?: string;
+}
+
+export interface CreateMatchTeamRequest {
+  matchId: string;
+  name: string;
+  shortName: string;
+  logoURL?: string;
+}
+
+export interface AddMatchTeamPlayerRequest extends MatchTeamPlayerInput {
+  matchId: string;
+  realTeamId: string;
 }

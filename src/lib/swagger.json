@@ -648,18 +648,6 @@
         "type": "object",
         "additionalProperties": false
       },
-      "MatchStatus": {
-        "enum": [
-          "SETTINGUP",
-          "PREMATCH",
-          "TOSTART",
-          "LINEUPANNOUNCED",
-          "INMATCH",
-          "MATCHENDED",
-          "FINALIZED"
-        ],
-        "type": "string"
-      },
       "Recordnumberany": {
         "properties": {},
         "additionalProperties": {},
@@ -853,6 +841,10 @@
         },
         "type": "object",
         "description": "Construct a type with a set of properties K of type T"
+      },
+      "PlayerSecondRole": {
+        "enum": ["BOWLER", "BATTER", "WICKETKEEPER", "ALLROUNDER"],
+        "type": "string"
       },
       "ContestStatus": {
         "enum": [
@@ -1262,10 +1254,6 @@
         "type": "object",
         "additionalProperties": false
       },
-      "PlayerSecondRole": {
-        "enum": ["BOWLER", "BATTER", "WICKETKEEPER", "ALLROUNDER"],
-        "type": "string"
-      },
       "PlayerRole": {
         "enum": ["CAPTAIN", "VICECAPTAIN", "MEMBER"],
         "type": "string"
@@ -1418,6 +1406,18 @@
       },
       "MatchType": {
         "enum": ["CRICKET"],
+        "type": "string"
+      },
+      "MatchStatus": {
+        "enum": [
+          "SETTINGUP",
+          "PREMATCH",
+          "TOSTART",
+          "LINEUPANNOUNCED",
+          "INMATCH",
+          "MATCHENDED",
+          "FINALIZED"
+        ],
         "type": "string"
       },
       "MatchSourcePlatform": {
@@ -3728,42 +3728,6 @@
         ]
       }
     },
-    "/owner/matches/status": {
-      "patch": {
-        "operationId": "UpdateMatchStatus",
-        "responses": {
-          "204": {
-            "description": "No content"
-          }
-        },
-        "tags": ["Owner"],
-        "security": [
-          {
-            "jwt": ["OWNER"]
-          }
-        ],
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "properties": {
-                  "status": {
-                    "$ref": "#/components/schemas/MatchStatus"
-                  },
-                  "matchId": {
-                    "type": "string"
-                  }
-                },
-                "required": ["status", "matchId"],
-                "type": "object"
-              }
-            }
-          }
-        }
-      }
-    },
     "/owner/matches/team-score": {
       "patch": {
         "operationId": "UpdateRealTeamScoreCard",
@@ -3879,6 +3843,299 @@
             }
           }
         ]
+      }
+    },
+    "/owner/matches/{matchId}/teams/{realTeamId}": {
+      "delete": {
+        "operationId": "DeleteRealTeam",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "deletedPlayerIds": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["deletedPlayerIds"],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "description": "Delete a real team for a match\nOnly allowed for matches in SETTINGUP or PREMATCH status\nWill fail if any players are referenced in dream teams",
+        "tags": ["Owner"],
+        "security": [
+          {
+            "jwt": ["OWNER"]
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "matchId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "realTeamId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "playerProfileId": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "EditRealTeam",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "removedPlayerIds": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "addedPlayerIds": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["removedPlayerIds", "addedPlayerIds"],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "description": "Edit a real team for a match\nOnly allowed for matches in SETTINGUP or PREMATCH status\nWill fail if removing players that are referenced in dream teams",
+        "tags": ["Owner"],
+        "security": [
+          {
+            "jwt": ["OWNER"]
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "matchId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "realTeamId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "players": {
+                    "items": {
+                      "properties": {
+                        "imageUrl": {
+                          "type": "string"
+                        },
+                        "espnId": {
+                          "type": "string"
+                        },
+                        "price": {
+                          "type": "number",
+                          "format": "double"
+                        },
+                        "playerSecondRole": {
+                          "$ref": "#/components/schemas/PlayerSecondRole"
+                        },
+                        "playerProfileId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["playerSecondRole", "playerProfileId"],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "logoURL": {
+                    "type": "string"
+                  },
+                  "shortName": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/owner/matches/{matchId}/teams": {
+      "post": {
+        "operationId": "CreateRealTeam",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "realTeamId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["realTeamId"],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "description": "Create a new real team for a match",
+        "tags": ["Owner"],
+        "security": [
+          {
+            "jwt": ["OWNER"]
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "matchId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "logoURL": {
+                    "type": "string"
+                  },
+                  "shortName": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["shortName", "name"],
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/owner/matches/{matchId}/teams/{realTeamId}/players": {
+      "post": {
+        "operationId": "AddRealTeamPlayer",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "description": "Add a player to a real team for a match",
+        "tags": ["Owner"],
+        "security": [
+          {
+            "jwt": ["OWNER"]
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "matchId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "realTeamId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "imageUrl": {
+                    "type": "string"
+                  },
+                  "espnId": {
+                    "type": "string"
+                  },
+                  "price": {
+                    "type": "number",
+                    "format": "double"
+                  },
+                  "playerSecondRole": {
+                    "$ref": "#/components/schemas/PlayerSecondRole"
+                  },
+                  "playerProfileId": {
+                    "type": "string"
+                  }
+                },
+                "required": ["playerSecondRole", "playerProfileId"],
+                "type": "object"
+              }
+            }
+          }
+        }
       }
     },
     "/matches/new": {
@@ -5376,6 +5633,14 @@
           {
             "in": "query",
             "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "playerName",
             "required": false,
             "schema": {
               "type": "string"

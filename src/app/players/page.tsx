@@ -19,8 +19,11 @@ export default function PlayersPage() {
   const [updateUpcoming, setUpdateUpcoming] = useState(false);
 
   useEffect(() => {
-    fetchPlayers();
-  }, []);
+    const timer = setTimeout(() => {
+      fetchPlayers();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const fetchPlayers = async (cursor?: string | number, isLoadMore = false) => {
     try {
@@ -35,6 +38,7 @@ export default function PlayersPage() {
       const data = await adminApi.getAllPlayerProfiles({
         pageSize: 20,
         cursor: cursor?.toString(),
+        playerName: searchQuery || undefined,
       });
 
       const items = data?.items || [];
@@ -100,10 +104,7 @@ export default function PlayersPage() {
     }
   };
 
-  const filteredPlayers = players.filter(p => 
-    (p.name || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
-    (p.country || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const displayedPlayers = players;
 
   return (
     <div className="p-6">
@@ -150,14 +151,14 @@ export default function PlayersPage() {
                   </td>
                 </tr>
               ))
-            ) : filteredPlayers.length === 0 ? (
+            ) : displayedPlayers.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
                   No players found
                 </td>
               </tr>
             ) : (
-              filteredPlayers.map((player) => (
+              displayedPlayers.map((player) => (
                 <tr key={player.playerProfileId} className="hover:bg-white/[0.02] transition-colors group">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
