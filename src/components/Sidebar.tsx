@@ -61,13 +61,33 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
+  {
+    label: "Wallets",
+    href: "/wallets",
+    icon: (
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={1.5}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3"
+        />
+      </svg>
+    ),
+  },
 ];
+
 
 import { useAuth } from "@/components/AuthProvider";
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   return (
     <aside className="fixed inset-y-0 left-0 w-56 bg-[#0d0d14] border-r border-white/5 flex flex-col z-20">
@@ -109,6 +129,21 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {/* User Info */}
+      {user && (
+        <div className="px-3 mb-4">
+          <div className="px-2.5 py-3 rounded-xl bg-white/[0.03] border border-white/5">
+            <p className="text-xs font-medium text-slate-200 truncate">{user.name}</p>
+            <div className="flex items-center gap-1.5 mt-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <p className="text-[10px] font-semibold text-emerald-500/80 uppercase tracking-wider">
+                {user.role}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bottom Actions */}
       <div className="px-3 pb-4">

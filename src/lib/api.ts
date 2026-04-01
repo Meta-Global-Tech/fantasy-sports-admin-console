@@ -29,6 +29,9 @@ import type {
   CreateMatchTeamRequest,
   AddMatchTeamPlayerRequest,
   User,
+  Wallet,
+  WalletWithTransactions,
+  GetWalletTransactionsParams,
 } from "@/types";
 
 // ── Token store ─────────────────────────────────────────────────────────────
@@ -207,6 +210,20 @@ export const adminApi = {
   },
   async deleteContest(matchId: string, contestId: string): Promise<void> {
     await api.delete(`/contests/delete/${matchId}/${contestId}`);
+  },
+  async getWalletBalance(walletId: string): Promise<Wallet> {
+    const response = await api.get<Wallet>(`/admin/wallets/${walletId}/balance`);
+    return response.data;
+  },
+  async getWalletTransactions(
+    walletId: string,
+    params?: GetWalletTransactionsParams,
+  ): Promise<WalletWithTransactions> {
+    const response = await api.get<WalletWithTransactions>(
+      `/admin/wallets/${walletId}/transactions`,
+      { params },
+    );
+    return response.data;
   },
 };
 

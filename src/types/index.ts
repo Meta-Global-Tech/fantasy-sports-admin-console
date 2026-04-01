@@ -71,15 +71,36 @@ export interface Transaction {
   fromDescription: string;
   toWalletId: string;
   toDescription: string;
-  amount?: number;
+  amount: number;
   currency?: Currency;
   createdAt: string;
   updatedAt: string;
   status: TransactionStatus;
   userId: string;
-  withdrawalToBeProcessed: boolean;
+  withdrawalToBeProcessed?: boolean;
   type?: string;
+  fromWalletBalance?: number;
+  toWalletBalance?: number;
+  details?: Record<string, any>;
+  reconciled?: boolean;
 }
+
+export interface Wallet {
+  id: string;
+  balance: number;
+  currency: Currency;
+}
+
+export interface PaginatedTransactionsResponse {
+  items: Transaction[];
+  nextCursor?: string | number;
+  hasMore: boolean;
+}
+
+export interface WalletWithTransactions extends Wallet {
+  transactions: PaginatedTransactionsResponse;
+}
+
 
 export interface PriceSheetItem {
   description: string;
@@ -399,3 +420,9 @@ export interface AddMatchTeamPlayerRequest extends MatchTeamPlayerInput {
   matchId: string;
   realTeamId: string;
 }
+
+export interface GetWalletTransactionsParams {
+  pageSize?: number;
+  cursor?: string | number;
+}
+
