@@ -430,6 +430,15 @@ export interface CreditContestFromCollectionRequest {
   contestId: string;
 }
 
+export interface UpdateContestConfigurationRequest {
+  matchId: string;
+  contestId: string;
+  teamsPerUserLimit?: number;
+  teamsTotalLimit?: number;
+  description?: string;
+  priceSheet?: Record<string, PriceSheetItem>;
+}
+
 export interface GetWalletTransactionsParams {
   pageSize?: number;
   cursor?: string | number;

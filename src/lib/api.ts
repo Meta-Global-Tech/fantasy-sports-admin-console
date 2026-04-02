@@ -30,6 +30,7 @@ import type {
   DeleteMatchTeamPlayerRequest,
   CreateMatchTeamRequest,
   AddMatchTeamPlayerRequest,
+  UpdateContestConfigurationRequest,
   User,
   Wallet,
   WalletWithTransactions,
@@ -311,5 +312,11 @@ export const ownerApi = {
   ): Promise<void> {
     const { contestId, ...body } = data;
     await api.post(`/owner/contests/${contestId}/credit-from-collection`, body);
+  },
+  async updateContestConfiguration(
+    data: UpdateContestConfigurationRequest,
+  ): Promise<void> {
+    const { contestId, ...body } = data;
+    await api.patch(`/owner/contests/${contestId}`, body);
   },
 };

@@ -217,6 +217,8 @@ export default function MatchesPage() {
     espnId: "",
     imageUrl: ""
   });
+  const [isEditingContestConfig, setIsEditingContestConfig] = useState(false);
+  const [pendingContestConfig, setPendingContestConfig] = useState<Partial<UpdateContestConfigurationRequest>>({});
 
   // Modal state
   const [confirmModal, setConfirmModal] = useState<{
@@ -483,6 +485,28 @@ export default function MatchesPage() {
         }
       },
     });
+  };
+
+  const handleUpdateContestConfig = async () => {
+    if (!selectedMatchId || !selectedContestId || !pendingContestConfig) return;
+    try {
+      setLoadingDetails(true);
+      await ownerApi.updateContestConfiguration({
+        matchId: selectedMatchId,
+        contestId: selectedContestId,
+        ...pendingContestConfig
+      });
+      alert("Contest configuration updated successfully");
+      setIsEditingContestConfig(false);
+      // Refresh details
+      await handleMatchClick(selectedMatchId);
+      setSelectedContestId(selectedContestId);
+    } catch (err: any) {
+      console.error("Failed to update contest config", err);
+      alert(err.response?.data?.message || "Failed to update contest configuration");
+    } finally {
+      setLoadingDetails(false);
+    }
   };
 
   const handleDeleteContest = async (contestId: string) => {
@@ -1266,6 +1290,23 @@ export default function MatchesPage() {
                               <span>↗</span>
                             </a>
 
+                            {isOwner && (
+                              <button
+                                onClick={() => {
+                                  setIsEditingContestConfig(true);
+                                  setPendingContestConfig({
+                                    teamsPerUserLimit: contest.teamsPerUserLimit,
+                                    teamsTotalLimit: contest.teamsTotalLimit,
+                                    description: contest.description,
+                                    priceSheet: contest.priceSheet
+                                  });
+                                }}
+                                className="flex items-center justify-center gap-2 w-full py-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-xs font-semibold border border-blue-500/20 transition-all mt-2"
+                              >
+                                Edit Configuration
+                              </button>
+                            )}
+
                             {/* Settle/Refund Button */}
                             {contest.status === "TOSETTLE" && (
                               <div className="flex flex-col gap-2 mt-2">
@@ -1306,10 +1347,154 @@ export default function MatchesPage() {
 
                           {/* Prize Pool / Price Sheet */}
                           <div>
-                            <h3 className="text-sm font-semibold text-white mb-3">
-                              Prize Distribution
-                            </h3>
-                            {priceSheet.length > 0 ? (
+                            <div className="flex items-center justify-between mb-3">
+                              <h3 className="text-sm font-semibold text-white">
+                                {isEditingContestConfig ? "Edit Contest Configuration" : "Prize Distribution"}
+                              </h3>
+                              {isEditingContestConfig && (
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => setIsEditingContestConfig(false)}
+                                    className="text-[10px] font-bold text-slate-500 hover:text-white"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    onClick={handleUpdateContestConfig}
+                                    className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300"
+                                  >
+                                    Save Changes
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+
+                            {isEditingContestConfig ? (
+                              <div className="flex flex-col gap-4">
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="flex flex-col gap-1">
+                                    <label className="text-[10px] text-slate-500 uppercase font-bold">Teams Per User</label>
+                                    <input
+                                      type="number"
+                                      value={pendingContestConfig.teamsPerUserLimit}
+                                      onChange={(e) => setPendingContestConfig({ ...pendingContestConfig, teamsPerUserLimit: parseInt(e.target.value) })}
+                                      className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500/50"
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-1">
+                                    <label className="text-[10px] text-slate-500 uppercase font-bold">Total Teams Limit</label>
+                                    <input
+                                      type="number"
+                                      value={pendingContestConfig.teamsTotalLimit}
+                                      onChange={(e) => setPendingContestConfig({ ...pendingContestConfig, teamsTotalLimit: parseInt(e.target.value) })}
+                                      className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500/50"
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-1 col-span-2">
+                                    <label className="text-[10px] text-slate-500 uppercase font-bold">Description</label>
+                                    <textarea
+                                      value={pendingContestConfig.description || ""}
+                                      onChange={(e) => setPendingContestConfig({ ...pendingContestConfig, description: e.target.value })}
+                                      className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500/50 min-h-[60px]"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="border-t border-white/5 pt-4">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <p className="text-[10px] text-slate-500 uppercase font-bold">Price Sheet</p>
+                                    <button
+                                      onClick={() => {
+                                        const sheet = { ...pendingContestConfig.priceSheet } as Record<string, PriceSheetItem>;
+                                        const newRow = (Object.keys(sheet).length + 1).toString();
+                                        sheet[newRow] = {
+                                          description: `Rank ${newRow}`,
+                                          rankFrom: 1,
+                                          rankTo: 1,
+                                          price: 0,
+                                          currency: contest.entryPriceCurrency,
+                                          rowNumber: parseInt(newRow)
+                                        };
+                                        setPendingContestConfig({ ...pendingContestConfig, priceSheet: sheet });
+                                      }}
+                                      className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300"
+                                    >
+                                      + Add Row
+                                    </button>
+                                  </div>
+                                  <div className="flex flex-col gap-2">
+                                    {Object.entries(pendingContestConfig.priceSheet || {}).sort((a, b) => a[1].rowNumber - b[1].rowNumber).map(([key, item]) => (
+                                      <div key={key} className="bg-black/20 border border-white/10 rounded-lg p-2 flex flex-col gap-2">
+                                        <div className="grid grid-cols-4 gap-2">
+                                          <div className="flex flex-col gap-1">
+                                            <label className="text-[8px] text-slate-500">From</label>
+                                            <input
+                                              type="number"
+                                              value={item.rankFrom}
+                                              onChange={(e) => {
+                                                const sheet = { ...pendingContestConfig.priceSheet };
+                                                sheet[key] = { ...item, rankFrom: parseInt(e.target.value) };
+                                                setPendingContestConfig({ ...pendingContestConfig, priceSheet: sheet });
+                                              }}
+                                              className="bg-black/20 border border-white/10 rounded px-1.5 py-1 text-[10px] text-white"
+                                            />
+                                          </div>
+                                          <div className="flex flex-col gap-1">
+                                            <label className="text-[8px] text-slate-500">To</label>
+                                            <input
+                                              type="number"
+                                              value={item.rankTo}
+                                              onChange={(e) => {
+                                                const sheet = { ...pendingContestConfig.priceSheet };
+                                                sheet[key] = { ...item, rankTo: parseInt(e.target.value) };
+                                                setPendingContestConfig({ ...pendingContestConfig, priceSheet: sheet });
+                                              }}
+                                              className="bg-black/20 border border-white/10 rounded px-1.5 py-1 text-[10px] text-white"
+                                            />
+                                          </div>
+                                          <div className="flex flex-col gap-1">
+                                            <label className="text-[8px] text-slate-500">Price</label>
+                                            <input
+                                              type="number"
+                                              value={item.price}
+                                              onChange={(e) => {
+                                                const sheet = { ...pendingContestConfig.priceSheet };
+                                                sheet[key] = { ...item, price: parseFloat(e.target.value) };
+                                                setPendingContestConfig({ ...pendingContestConfig, priceSheet: sheet });
+                                              }}
+                                              className="bg-black/20 border border-white/10 rounded px-1.5 py-1 text-[10px] text-white"
+                                            />
+                                          </div>
+                                          <div className="flex flex-col justify-end">
+                                            <button
+                                              onClick={() => {
+                                                const sheet = { ...pendingContestConfig.priceSheet };
+                                                delete sheet[key];
+                                                setPendingContestConfig({ ...pendingContestConfig, priceSheet: sheet });
+                                              }}
+                                              className="text-[10px] font-bold text-red-500 hover:text-red-400 py-1"
+                                            >
+                                              Delete
+                                            </button>
+                                          </div>
+                                        </div>
+                                        <input
+                                          type="text"
+                                          value={item.description}
+                                          placeholder="Description"
+                                          onChange={(e) => {
+                                            const sheet = { ...pendingContestConfig.priceSheet };
+                                            sheet[key] = { ...item, description: e.target.value };
+                                            setPendingContestConfig({ ...pendingContestConfig, priceSheet: sheet });
+                                          }}
+                                          className="bg-black/20 border border-white/10 rounded px-1.5 py-1 text-[10px] text-white w-full"
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : priceSheet.length > 0 ? (
                               <div className="bg-white/3 border border-white/5 rounded-xl overflow-hidden">
                                 <table className="w-full text-xs text-left">
                                   <thead className="bg-white/5 text-slate-500 uppercase text-[9px] tracking-wider">

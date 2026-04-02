@@ -846,6 +846,50 @@
         "enum": ["BOWLER", "BATTER", "WICKETKEEPER", "ALLROUNDER"],
         "type": "string"
       },
+      "PriceSheetItem": {
+        "properties": {
+          "rowNumber": {
+            "type": "number",
+            "format": "double"
+          },
+          "rankTo": {
+            "type": "number",
+            "format": "double"
+          },
+          "rankFrom": {
+            "type": "number",
+            "format": "double"
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "rowNumber",
+          "rankTo",
+          "rankFrom",
+          "price",
+          "currency",
+          "description"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "RecordPriceSheetItem9d7f": {
+        "properties": {},
+        "additionalProperties": {
+          "$ref": "#/components/schemas/PriceSheetItem"
+        },
+        "type": "object",
+        "description": "Construct a type with a set of properties K of type T"
+      },
       "ContestStatus": {
         "enum": [
           "PREMATCH",
@@ -910,50 +954,6 @@
           "PRACTICE"
         ],
         "type": "string"
-      },
-      "PriceSheetItem": {
-        "properties": {
-          "rowNumber": {
-            "type": "number",
-            "format": "double"
-          },
-          "rankTo": {
-            "type": "number",
-            "format": "double"
-          },
-          "rankFrom": {
-            "type": "number",
-            "format": "double"
-          },
-          "price": {
-            "type": "number",
-            "format": "double"
-          },
-          "currency": {
-            "$ref": "#/components/schemas/Currency"
-          },
-          "description": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "rowNumber",
-          "rankTo",
-          "rankFrom",
-          "price",
-          "currency",
-          "description"
-        ],
-        "type": "object",
-        "additionalProperties": false
-      },
-      "RecordPriceSheetItem9d7f": {
-        "properties": {},
-        "additionalProperties": {
-          "$ref": "#/components/schemas/PriceSheetItem"
-        },
-        "type": "object",
-        "description": "Construct a type with a set of properties K of type T"
       },
       "ContestTeamFormationRuleType": {
         "enum": [
@@ -4169,6 +4169,63 @@
             "application/json": {
               "schema": {
                 "properties": {
+                  "matchId": {
+                    "type": "string"
+                  }
+                },
+                "required": ["matchId"],
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/owner/contests/{contestId}": {
+      "patch": {
+        "operationId": "UpdateContestConfiguration",
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "description": "Update contest configuration\nOnly allowed for matches in PREMATCH/SETTINGUP/TOSTART/LINEUPANNOUNCED status",
+        "tags": ["Owner"],
+        "security": [
+          {
+            "jwt": ["OWNER"]
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "contestId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "teamsPerUserLimit": {
+                    "type": "number",
+                    "format": "double"
+                  },
+                  "teamsTotalLimit": {
+                    "type": "number",
+                    "format": "double"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "priceSheet": {
+                    "$ref": "#/components/schemas/RecordPriceSheetItem9d7f"
+                  },
                   "matchId": {
                     "type": "string"
                   }
