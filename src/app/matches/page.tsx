@@ -1303,7 +1303,7 @@ export default function MatchesPage() {
                         contest.priceSheet,
                       );
                       const willRefund =
-                        prizePoolSum < (contest.walletBalance || 0);
+                        (contest.walletBalance || 0) < prizePoolSum;
 
                       return (
                         <div className="flex flex-col gap-6">
@@ -1361,7 +1361,7 @@ export default function MatchesPage() {
                               <div className="mb-4 px-3 py-2 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center gap-2">
                                 <span className="text-xs">⚠️</span>
                                 <p className="text-[10px] font-bold text-orange-400 uppercase tracking-widest">
-                                  Contest will refund (Prize &lt; Balance)
+                                  Contest will refund (Balance &lt; Prize)
                                 </p>
                               </div>
                             )}
@@ -3320,7 +3320,7 @@ export default function MatchesPage() {
                             contest.priceSheet,
                           );
                           const willRefund =
-                            prizePoolSum < (contest.walletBalance || 0);
+                            (contest.walletBalance || 0) < prizePoolSum;
 
                           return (
                             <div
