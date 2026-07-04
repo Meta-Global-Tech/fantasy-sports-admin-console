@@ -281,6 +281,52 @@ export interface PaginatedPlayerProfilesResponse {
   hasMore: boolean;
 }
 
+// ── Notifications (admin) ─────────────────────────────────────────────────────
+
+export type NotificationPlatform = "ios" | "android" | "web";
+
+export interface NotificationDeviceInfo {
+  platform: NotificationPlatform;
+  tokenPreview: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface UserWithNotificationDevices {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  createdAt: number;
+  devices: NotificationDeviceInfo[];
+}
+
+export interface GetNotificationUsersParams {
+  pageSize?: number;
+  cursor?: string;
+  search?: string;
+}
+
+export interface PaginatedNotificationUsersResponse {
+  items: UserWithNotificationDevices[];
+  nextCursor?: string | number;
+  hasMore: boolean;
+}
+
+export interface SendTestNotificationRequest {
+  userId: string;
+  title?: string;
+  body?: string;
+  data?: Record<string, string>;
+}
+
+export interface SendNotificationResult {
+  attempted: number;
+  delivered: number;
+  failures: { platform: NotificationPlatform; error: string }[];
+}
+
 export interface SettleContestRequest {
   transactions: {
     amount: number;

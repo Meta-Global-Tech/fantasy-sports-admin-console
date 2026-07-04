@@ -35,6 +35,10 @@ import type {
   Wallet,
   WalletWithTransactions,
   GetWalletTransactionsParams,
+  GetNotificationUsersParams,
+  PaginatedNotificationUsersResponse,
+  SendTestNotificationRequest,
+  SendNotificationResult,
 } from "@/types";
 
 // ── Token store ─────────────────────────────────────────────────────────────
@@ -230,6 +234,24 @@ export const adminApi = {
     const response = await api.get<WalletWithTransactions>(
       `/admin/wallets/${walletId}/transactions`,
       { params },
+    );
+    return response.data;
+  },
+  async getUsersWithNotificationDevices(
+    params?: GetNotificationUsersParams,
+  ): Promise<PaginatedNotificationUsersResponse> {
+    const response = await api.get<PaginatedNotificationUsersResponse>(
+      "/admin/notifications/users",
+      { params },
+    );
+    return response.data;
+  },
+  async sendTestNotification(
+    data: SendTestNotificationRequest,
+  ): Promise<SendNotificationResult> {
+    const response = await api.post<SendNotificationResult>(
+      "/admin/notifications/test",
+      data,
     );
     return response.data;
   },
