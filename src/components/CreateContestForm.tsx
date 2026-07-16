@@ -13,6 +13,7 @@ const CONTEST_TYPES: ContestType[] = [
   "POOL3",
   "HEADTOHEAD",
   "PRACTICE",
+  "HALVING",
 ];
 
 interface CreateContestFormProps {

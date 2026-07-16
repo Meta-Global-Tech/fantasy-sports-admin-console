@@ -951,7 +951,8 @@
           "POOL10",
           "POOL3",
           "HEADTOHEAD",
-          "PRACTICE"
+          "PRACTICE",
+          "HALVING"
         ],
         "type": "string"
       },

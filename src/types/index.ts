@@ -160,7 +160,8 @@ export type ContestType =
   | "POOL10"
   | "POOL3"
   | "HEADTOHEAD"
-  | "PRACTICE";
+  | "PRACTICE"
+  | "HALVING";
 
 export interface Contest {
   id: string;
