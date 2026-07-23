@@ -40,6 +40,9 @@ import type {
   SendTestNotificationRequest,
   SendNotificationResult,
   NotificationGlobalConfig,
+  GetAdminUsersParams,
+  PaginatedAdminUsersResponse,
+  AdminUserDetails,
 } from "@/types";
 
 // ── Token store ─────────────────────────────────────────────────────────────
@@ -301,6 +304,19 @@ export const adminApi = {
       sanitizeNotificationConfig(config),
     );
     return sanitizeNotificationConfig(response.data);
+  },
+  async getUsers(
+    params?: GetAdminUsersParams,
+  ): Promise<PaginatedAdminUsersResponse> {
+    const response = await api.get<PaginatedAdminUsersResponse>(
+      "/admin/users",
+      { params },
+    );
+    return response.data;
+  },
+  async getUserDetails(userId: string): Promise<AdminUserDetails> {
+    const response = await api.get<AdminUserDetails>(`/admin/users/${userId}`);
+    return response.data;
   },
 };
 

@@ -351,6 +351,65 @@ export interface NotificationGlobalConfig {
   contestWinnings: { enabled: boolean };
 }
 
+// ── Users (admin) ─────────────────────────────────────────────────────────────
+
+export interface AdminUserSummary {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  createdAt: number;
+}
+
+export interface GetAdminUsersParams {
+  pageSize?: number;
+  cursor?: string;
+  search?: string;
+}
+
+export interface PaginatedAdminUsersResponse {
+  items: AdminUserSummary[];
+  nextCursor?: string | number;
+  hasMore: boolean;
+}
+
+export interface UserNotificationPreferences {
+  matchReminders: boolean;
+  matchReminderOffsets: ReminderOffsetToggles;
+  myMatchReminders: boolean;
+  lineupAnnounced: boolean;
+  withdrawalProcessed: boolean;
+  contestWinnings: boolean;
+}
+
+export interface AdminUserWalletInfo {
+  id: string;
+  balance: number;
+  currency: string;
+  description?: string;
+}
+
+export interface AdminUserDetails {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  createdAt: number;
+  modifiedAt: number;
+  stripeCustomerId?: string;
+  wiseEmail?: string;
+  binanceEmail?: string;
+  refered_user?: string;
+  refered_code?: string;
+  practiceContestLimit: number;
+  practiceContestsPlayed: number;
+  wallet?: AdminUserWalletInfo;
+  notificationPreferences: UserNotificationPreferences;
+  devices: NotificationDeviceInfo[];
+}
+
 export interface SettleContestRequest {
   transactions: {
     amount: number;
