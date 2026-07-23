@@ -7,6 +7,8 @@ import {
   NotificationDeviceInfo,
   NotificationPlatform,
   SendNotificationResult,
+  NotificationGlobalConfig,
+  ReminderOffsetToggles,
 } from "@/types";
 
 const PAGE_SIZE = 25;
@@ -27,6 +29,75 @@ const PLATFORM_STYLES: Record<NotificationPlatform, string> = {
   android: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
   web: "bg-violet-500/10 text-violet-400 border-violet-500/20",
 };
+
+const MATCH_REMINDER_OFFSETS: (keyof ReminderOffsetToggles)[] = [
+  "24h",
+  "12h",
+  "6h",
+  "3h",
+  "1h",
+  "30m",
+];
+
+const MY_MATCH_REMINDER_OFFSETS: ("1h" | "30m")[] = ["1h", "30m"];
+
+function Toggle({
+  checked,
+  onChange,
+  disabled = false,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-all duration-300 ${
+        checked
+          ? "bg-emerald-400 border-emerald-400"
+          : "bg-white/5 border-white/10"
+      } ${disabled ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}`}
+    >
+      <span
+        className={`inline-block h-4 w-4 rounded-full transition-transform duration-300 ${
+          checked ? "translate-x-[22px] bg-black" : "translate-x-1 bg-slate-400"
+        }`}
+      />
+    </button>
+  );
+}
+
+function OffsetChip({
+  label,
+  checked,
+  onChange,
+  disabled = false,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={`px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-xl border transition-all duration-300 ${
+        checked
+          ? "bg-emerald-400/10 border-emerald-400/40 text-emerald-400"
+          : "bg-white/[0.03] border-white/10 text-slate-500"
+      } disabled:opacity-30 disabled:cursor-not-allowed active:scale-95`}
+    >
+      {label}
+    </button>
+  );
+}
 
 function PlatformBadge({ device }: { device: NotificationDeviceInfo }) {
   return (
@@ -50,6 +121,16 @@ export default function NotificationsPage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [onlyWithDevices, setOnlyWithDevices] = useState(false);
+
+  // Notification-config state
+  const [config, setConfig] = useState<NotificationGlobalConfig | null>(null);
+  const [savedConfig, setSavedConfig] =
+    useState<NotificationGlobalConfig | null>(null);
+  const [configLoading, setConfigLoading] = useState(true);
+  const [configError, setConfigError] = useState<string | null>(null);
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [saveConfigError, setSaveConfigError] = useState<string | null>(null);
+  const [saveConfigSuccess, setSaveConfigSuccess] = useState(false);
 
   // Send-test modal state
   const [selectedUser, setSelectedUser] =
@@ -102,6 +183,63 @@ export default function NotificationsPage() {
   useEffect(() => {
     fetchUsers(search);
   }, [search, fetchUsers]);
+
+  const fetchConfig = useCallback(async () => {
+    try {
+      setConfigLoading(true);
+      setConfigError(null);
+      const data = await adminApi.getNotificationConfig();
+      setConfig(data);
+      setSavedConfig(data);
+    } catch (err: any) {
+      setConfigError(
+        err.response?.data?.message ||
+          "Failed to load notification settings. Try again.",
+      );
+      console.error(err);
+    } finally {
+      setConfigLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchConfig();
+  }, [fetchConfig]);
+
+  const configDirty =
+    config !== null &&
+    savedConfig !== null &&
+    JSON.stringify(config) !== JSON.stringify(savedConfig);
+
+  const updateConfig = (
+    updater: (current: NotificationGlobalConfig) => NotificationGlobalConfig,
+  ) => {
+    setConfig((current) => (current ? updater(current) : current));
+    setSaveConfigSuccess(false);
+    setSaveConfigError(null);
+  };
+
+  const handleSaveConfig = async () => {
+    if (!config) return;
+    try {
+      setSavingConfig(true);
+      setSaveConfigError(null);
+      setSaveConfigSuccess(false);
+      const saved = await adminApi.updateNotificationConfig(config);
+      setConfig(saved);
+      setSavedConfig(saved);
+      setSaveConfigSuccess(true);
+      setTimeout(() => setSaveConfigSuccess(false), 3000);
+    } catch (err: any) {
+      setSaveConfigError(
+        err.response?.data?.message ||
+          "Failed to save notification settings. Try again.",
+      );
+      console.error(err);
+    } finally {
+      setSavingConfig(false);
+    }
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -229,6 +367,241 @@ export default function NotificationsPage() {
             </span>
           </label>
         </div>
+      </div>
+
+      {/* Notification Settings */}
+      <div className="mb-10 bg-[#0d0d14] border border-white/5 rounded-[40px] overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)]">
+        <div className="px-10 py-7 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
+          <div>
+            <h2 className="text-lg font-bold text-white tracking-tight">
+              Automatic Notifications
+            </h2>
+            <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest mt-1">
+              Platform-wide switches
+            </p>
+          </div>
+          {configDirty && (
+            <div className="px-4 py-1.5 rounded-full bg-amber-500/5 border border-amber-500/20 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+              <span className="text-[11px] text-amber-400 font-bold font-mono">
+                UNSAVED CHANGES
+              </span>
+            </div>
+          )}
+        </div>
+
+        {configLoading ? (
+          <div className="px-10 py-24 text-center">
+            <div className="w-8 h-8 mx-auto border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
+          </div>
+        ) : configError ? (
+          <div className="p-10">
+            <div className="p-5 rounded-2xl bg-red-500/5 border border-red-500/20 text-red-400 text-sm">
+              <p className="font-semibold text-red-300">Error Encountered</p>
+              <p className="mt-1 opacity-90">{configError}</p>
+            </div>
+          </div>
+        ) : config ? (
+          <>
+            <div className="px-10 pt-6">
+              <p className="text-xs text-slate-500 leading-relaxed max-w-2xl">
+                These switches control automatic push notifications for the
+                whole platform. Turning one off stops that notification for
+                everyone; users can additionally opt out individually in the
+                app.
+              </p>
+            </div>
+
+            <div className="px-10 divide-y divide-white/5">
+              {/* Upcoming match reminders */}
+              <div className="py-7">
+                <div className="flex items-center justify-between gap-6">
+                  <div>
+                    <p className="text-sm text-slate-200 font-semibold">
+                      Upcoming match reminders
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Remind all users before every match starts
+                    </p>
+                  </div>
+                  <Toggle
+                    checked={config.matchReminders.enabled}
+                    onChange={(enabled) =>
+                      updateConfig((c) => ({
+                        ...c,
+                        matchReminders: { ...c.matchReminders, enabled },
+                      }))
+                    }
+                  />
+                </div>
+                <div
+                  className={`mt-4 flex flex-wrap gap-2 transition-opacity duration-300 ${
+                    config.matchReminders.enabled ? "" : "opacity-40"
+                  }`}
+                >
+                  {MATCH_REMINDER_OFFSETS.map((offset) => (
+                    <OffsetChip
+                      key={offset}
+                      label={`${offset} before`}
+                      checked={config.matchReminders.offsets[offset]}
+                      disabled={!config.matchReminders.enabled}
+                      onChange={(checked) =>
+                        updateConfig((c) => ({
+                          ...c,
+                          matchReminders: {
+                            ...c.matchReminders,
+                            offsets: {
+                              ...c.matchReminders.offsets,
+                              [offset]: checked,
+                            },
+                          },
+                        }))
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* My-match reminders */}
+              <div className="py-7">
+                <div className="flex items-center justify-between gap-6">
+                  <div>
+                    <p className="text-sm text-slate-200 font-semibold">
+                      My-match reminders
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Remind users with a draft or submitted team before their
+                      match starts
+                    </p>
+                  </div>
+                  <Toggle
+                    checked={config.myMatchReminders.enabled}
+                    onChange={(enabled) =>
+                      updateConfig((c) => ({
+                        ...c,
+                        myMatchReminders: { ...c.myMatchReminders, enabled },
+                      }))
+                    }
+                  />
+                </div>
+                <div
+                  className={`mt-4 flex flex-wrap gap-2 transition-opacity duration-300 ${
+                    config.myMatchReminders.enabled ? "" : "opacity-40"
+                  }`}
+                >
+                  {MY_MATCH_REMINDER_OFFSETS.map((offset) => (
+                    <OffsetChip
+                      key={offset}
+                      label={`${offset} before`}
+                      checked={config.myMatchReminders.offsets[offset]}
+                      disabled={!config.myMatchReminders.enabled}
+                      onChange={(checked) =>
+                        updateConfig((c) => ({
+                          ...c,
+                          myMatchReminders: {
+                            ...c.myMatchReminders,
+                            offsets: {
+                              ...c.myMatchReminders.offsets,
+                              [offset]: checked,
+                            },
+                          },
+                        }))
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Lineup announced */}
+              <div className="py-7 flex items-center justify-between gap-6">
+                <div>
+                  <p className="text-sm text-slate-200 font-semibold">
+                    Lineup announced
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Notify users when a match&apos;s lineup is announced
+                  </p>
+                </div>
+                <Toggle
+                  checked={config.lineupAnnounced.enabled}
+                  onChange={(enabled) =>
+                    updateConfig((c) => ({
+                      ...c,
+                      lineupAnnounced: { enabled },
+                    }))
+                  }
+                />
+              </div>
+
+              {/* Withdrawal processed */}
+              <div className="py-7 flex items-center justify-between gap-6">
+                <div>
+                  <p className="text-sm text-slate-200 font-semibold">
+                    Withdrawal processed
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Notify a user when their withdrawal is processed
+                  </p>
+                </div>
+                <Toggle
+                  checked={config.withdrawalProcessed.enabled}
+                  onChange={(enabled) =>
+                    updateConfig((c) => ({
+                      ...c,
+                      withdrawalProcessed: { enabled },
+                    }))
+                  }
+                />
+              </div>
+
+              {/* Contest winnings */}
+              <div className="py-7 flex items-center justify-between gap-6">
+                <div>
+                  <p className="text-sm text-slate-200 font-semibold">
+                    Contest winnings
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Notify a user when contest winnings are awarded to them
+                  </p>
+                </div>
+                <Toggle
+                  checked={config.contestWinnings.enabled}
+                  onChange={(enabled) =>
+                    updateConfig((c) => ({
+                      ...c,
+                      contestWinnings: { enabled },
+                    }))
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="px-10 py-6 border-t border-white/5 bg-white/[0.01] flex items-center justify-end gap-4">
+              {saveConfigError && (
+                <p className="text-sm text-red-400">{saveConfigError}</p>
+              )}
+              {saveConfigSuccess && (
+                <p className="text-sm text-emerald-400 font-semibold">
+                  Settings saved
+                </p>
+              )}
+              <button
+                onClick={handleSaveConfig}
+                disabled={!configDirty || savingConfig}
+                className="px-8 py-3 bg-white text-black text-xs font-black rounded-2xl hover:bg-emerald-400 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2 active:scale-95 uppercase tracking-widest"
+              >
+                {savingConfig ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                    Saving...
+                  </>
+                ) : (
+                  "Save Settings"
+                )}
+              </button>
+            </div>
+          </>
+        ) : null}
       </div>
 
       {error && (

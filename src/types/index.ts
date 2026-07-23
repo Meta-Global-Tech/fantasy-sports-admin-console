@@ -328,6 +328,29 @@ export interface SendNotificationResult {
   failures: { platform: NotificationPlatform; error: string }[];
 }
 
+export interface ReminderOffsetToggles {
+  "24h": boolean;
+  "12h": boolean;
+  "6h": boolean;
+  "3h": boolean;
+  "1h": boolean;
+  "30m": boolean;
+}
+
+export interface NotificationGlobalConfig {
+  matchReminders: {
+    enabled: boolean;
+    offsets: ReminderOffsetToggles;
+  };
+  myMatchReminders: {
+    enabled: boolean;
+    offsets: { "1h": boolean; "30m": boolean };
+  };
+  lineupAnnounced: { enabled: boolean };
+  withdrawalProcessed: { enabled: boolean };
+  contestWinnings: { enabled: boolean };
+}
+
 export interface SettleContestRequest {
   transactions: {
     amount: number;

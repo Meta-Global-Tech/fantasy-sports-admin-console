@@ -39,6 +39,7 @@ import type {
   PaginatedNotificationUsersResponse,
   SendTestNotificationRequest,
   SendNotificationResult,
+  NotificationGlobalConfig,
 } from "@/types";
 
 // ── Token store ─────────────────────────────────────────────────────────────
@@ -171,6 +172,37 @@ export const contestsApi = {
   },
 };
 
+/**
+ * Keep only the known config fields. The backend rejects excess properties,
+ * and in dev it appends response metadata (e.g. `metrics`) that must not be
+ * echoed back on save.
+ */
+const sanitizeNotificationConfig = (
+  config: NotificationGlobalConfig,
+): NotificationGlobalConfig => ({
+  matchReminders: {
+    enabled: config.matchReminders.enabled,
+    offsets: {
+      "24h": config.matchReminders.offsets["24h"],
+      "12h": config.matchReminders.offsets["12h"],
+      "6h": config.matchReminders.offsets["6h"],
+      "3h": config.matchReminders.offsets["3h"],
+      "1h": config.matchReminders.offsets["1h"],
+      "30m": config.matchReminders.offsets["30m"],
+    },
+  },
+  myMatchReminders: {
+    enabled: config.myMatchReminders.enabled,
+    offsets: {
+      "1h": config.myMatchReminders.offsets["1h"],
+      "30m": config.myMatchReminders.offsets["30m"],
+    },
+  },
+  lineupAnnounced: { enabled: config.lineupAnnounced.enabled },
+  withdrawalProcessed: { enabled: config.withdrawalProcessed.enabled },
+  contestWinnings: { enabled: config.contestWinnings.enabled },
+});
+
 export const adminApi = {
   async getAllPlayerProfiles(
     params?: GetPlayerProfilesParams,
@@ -254,6 +286,21 @@ export const adminApi = {
       data,
     );
     return response.data;
+  },
+  async getNotificationConfig(): Promise<NotificationGlobalConfig> {
+    const response = await api.get<NotificationGlobalConfig>(
+      "/admin/notifications/config",
+    );
+    return sanitizeNotificationConfig(response.data);
+  },
+  async updateNotificationConfig(
+    config: NotificationGlobalConfig,
+  ): Promise<NotificationGlobalConfig> {
+    const response = await api.put<NotificationGlobalConfig>(
+      "/admin/notifications/config",
+      sanitizeNotificationConfig(config),
+    );
+    return sanitizeNotificationConfig(response.data);
   },
 };
 
