@@ -1,4 +1,4 @@
-import type { MatchStatus, ContestStatus } from "@/types";
+import type { MatchStatus, ContestStatus, DreamTeamStatus } from "@/types";
 
 export function formatDate(iso: string) {
   return new Date(iso).toLocaleString("en-GB", {
@@ -22,6 +22,12 @@ export const MATCH_STATUS_COLORS: Record<MatchStatus, string> = {
   INMATCH: "bg-green-500/20 text-green-400 border-green-500/30",
   MATCHENDED: "bg-orange-500/20 text-orange-400 border-orange-500/30",
   FINALIZED: "bg-slate-600/20 text-slate-500 border-slate-600/30",
+};
+
+export const DREAM_TEAM_STATUS_COLORS: Record<DreamTeamStatus, string> = {
+  DRAFT: "bg-amber-500/20 text-amber-400",
+  SUBMITTED: "bg-emerald-500/20 text-emerald-400",
+  LOCKED: "bg-blue-500/20 text-blue-400",
 };
 
 export const CONTEST_STATUS_COLORS: Record<ContestStatus, string> = {

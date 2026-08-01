@@ -163,6 +163,21 @@ export type ContestType =
   | "PRACTICE"
   | "HALVING";
 
+export type DreamTeamStatus = "DRAFT" | "SUBMITTED" | "LOCKED";
+
+export interface ContestDreamTeam {
+  dreamTeamId: string;
+  name: string;
+  status: DreamTeamStatus;
+  ownerId: string;
+  ownerName?: string;
+  ownerEmail?: string;
+  createdAt: number;
+  submittedAt?: number;
+  score?: number;
+  rank?: number;
+}
+
 export interface Contest {
   id: string;
   contestId?: number;
@@ -182,6 +197,7 @@ export interface Contest {
   walletBalance?: number;
   leaderBoard?: Record<string, LeaderBoardEntry>;
   priceSheet?: Record<string, PriceSheetItem>;
+  dreamTeams?: ContestDreamTeam[];
 }
 
 export type PlayerRole = "CAPTAIN" | "VICECAPTAIN" | "MEMBER";

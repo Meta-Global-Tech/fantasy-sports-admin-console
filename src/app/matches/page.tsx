@@ -23,7 +23,7 @@ import type {
 import { MatchCard } from "@/components/MatchCard";
 import { CreateContestForm } from "@/components/CreateContestForm";
 import { DateRangePicker } from "@/components/DateRangePicker";
-import { CONTEST_STATUS_COLORS } from "@/lib/utils";
+import { CONTEST_STATUS_COLORS, DREAM_TEAM_STATUS_COLORS } from "@/lib/utils";
 import { adminApi } from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -1286,6 +1286,25 @@ export default function MatchesPage() {
                           )
                         : [];
 
+                      // All dream teams incl. drafts: ranked first, drafts last
+                      const draftsLast = (s: string) =>
+                        s === "DRAFT" ? 1 : 0;
+                      const allTeams = contest.dreamTeams
+                        ? [...contest.dreamTeams].sort((a, b) => {
+                            const ra = a.rank ?? Infinity;
+                            const rb = b.rank ?? Infinity;
+                            if (ra !== rb) return ra - rb;
+                            if (draftsLast(a.status) !== draftsLast(b.status))
+                              return (
+                                draftsLast(a.status) - draftsLast(b.status)
+                              );
+                            return (b.score ?? 0) - (a.score ?? 0);
+                          })
+                        : [];
+                      const draftCount = allTeams.filter(
+                        (t) => t.status === "DRAFT",
+                      ).length;
+
                       const priceSheet = contest.priceSheet
                         ? Object.values(contest.priceSheet).sort(
                             (a, b) => a.rowNumber - b.rowNumber,
@@ -1763,15 +1782,63 @@ export default function MatchesPage() {
                             )}
                           </div>
 
-                          {/* Leaderboard */}
+                          {/* Teams (incl. drafts) */}
                           <div>
                             <h3 className="text-sm font-semibold text-white mb-3 flex items-center justify-between">
-                              Leaderboard
+                              Teams
                               <span className="text-[10px] text-slate-500">
-                                {leaderboard.length} entries
+                                {allTeams.length > 0
+                                  ? `${allTeams.length} teams${draftCount > 0 ? ` · ${draftCount} draft${draftCount > 1 ? "s" : ""}` : ""}`
+                                  : `${leaderboard.length} entries`}
                               </span>
                             </h3>
-                            {leaderboard.length > 0 ? (
+                            {allTeams.length > 0 ? (
+                              <div className="flex flex-col gap-2">
+                                {allTeams.map((team) => (
+                                  <div
+                                    key={`${team.ownerId}-${team.dreamTeamId}`}
+                                    className={`bg-black/20 border rounded-lg p-3 flex items-center gap-3 ${
+                                      team.status === "DRAFT"
+                                        ? "border-amber-500/20"
+                                        : "border-white/5"
+                                    }`}
+                                  >
+                                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-xs font-bold text-emerald-400 shrink-0">
+                                      {team.rank ? `#${team.rank}` : "—"}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <p className="text-xs font-semibold text-white truncate">
+                                          {team.name}
+                                        </p>
+                                        <span
+                                          className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${DREAM_TEAM_STATUS_COLORS[team.status] ?? "bg-slate-500/20 text-slate-400"}`}
+                                        >
+                                          {team.status}
+                                        </span>
+                                      </div>
+                                      <p
+                                        className="text-[10px] text-slate-500 truncate"
+                                        title={team.ownerId}
+                                      >
+                                        {team.ownerName || team.ownerId}
+                                        {team.ownerEmail
+                                          ? ` · ${team.ownerEmail}`
+                                          : ""}
+                                      </p>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-xs font-bold text-white">
+                                        {team.score ?? "—"}
+                                      </p>
+                                      <p className="text-[9px] text-slate-500">
+                                        Pts
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : leaderboard.length > 0 ? (
                               <div className="flex flex-col gap-2">
                                 {leaderboard.map((entry) => (
                                   <div
@@ -1802,7 +1869,7 @@ export default function MatchesPage() {
                               </div>
                             ) : (
                               <div className="bg-white/3 border border-dashed border-white/5 rounded-xl py-8 text-center text-slate-500 text-xs">
-                                No leaderboard entries yet
+                                No teams yet
                               </div>
                             )}
                           </div>
