@@ -6,7 +6,7 @@ import {
   UserWithNotificationDevices,
   NotificationDeviceInfo,
   NotificationPlatform,
-  SendNotificationResult,
+  BroadcastNotificationResult,
   NotificationGlobalConfig,
   ReminderOffsetToggles,
 } from "@/types";
@@ -132,7 +132,7 @@ export default function NotificationsPage() {
   const [saveConfigError, setSaveConfigError] = useState<string | null>(null);
   const [saveConfigSuccess, setSaveConfigSuccess] = useState(false);
 
-  // Send-test modal state
+  // Send-notification modal state
   const [selectedUser, setSelectedUser] =
     useState<UserWithNotificationDevices | null>(null);
   const [title, setTitle] = useState("ProCrick test notification");
@@ -141,9 +141,8 @@ export default function NotificationsPage() {
   );
   const [screen, setScreen] = useState("");
   const [sending, setSending] = useState(false);
-  const [sendResult, setSendResult] = useState<SendNotificationResult | null>(
-    null,
-  );
+  const [sendResult, setSendResult] =
+    useState<BroadcastNotificationResult | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
 
   const fetchUsers = useCallback(
@@ -259,22 +258,22 @@ export default function NotificationsPage() {
     setSendError(null);
   };
 
-  const handleSendTest = async () => {
+  const handleSendNotification = async () => {
     if (!selectedUser) return;
     try {
       setSending(true);
       setSendError(null);
       setSendResult(null);
-      const result = await adminApi.sendTestNotification({
-        userId: selectedUser.id,
-        title: title.trim() || undefined,
-        body: body.trim() || undefined,
+      const result = await adminApi.sendNotificationToUsers({
+        userIds: [selectedUser.id],
+        title: title.trim() || "ProCrick test notification",
+        body: body.trim() || "If you can read this, push notifications work 🎉",
         data: screen.trim() ? { screen: screen.trim() } : undefined,
       });
       setSendResult(result);
     } catch (err: any) {
       setSendError(
-        err.response?.data?.message || "Failed to send the test notification.",
+        err.response?.data?.message || "Failed to send the notification.",
       );
       console.error(err);
     } finally {
@@ -314,7 +313,7 @@ export default function NotificationsPage() {
           </div>
           <p className="text-slate-400 text-sm max-w-xl leading-relaxed mb-8">
             All registered app users and the devices they have enabled push
-            notifications on. Select a user to send them a test notification.
+            notifications on. Select a user to send them a push notification.
           </p>
 
           <form onSubmit={handleSearch} className="flex gap-3 max-w-2xl mb-4">
@@ -713,7 +712,7 @@ export default function NotificationsPage() {
                         disabled={user.devices.length === 0}
                         className="px-4 py-2 text-[11px] font-bold rounded-xl bg-white/[0.03] border border-white/10 text-slate-300 hover:bg-emerald-400 hover:text-black transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
                       >
-                        Send Test
+                        Send Notification
                       </button>
                     </td>
                   </tr>
@@ -745,7 +744,7 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      {/* Send-test modal */}
+      {/* Send-notification modal */}
       {selectedUser && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-6"
@@ -758,7 +757,7 @@ export default function NotificationsPage() {
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h2 className="text-xl font-bold text-white tracking-tight">
-                  Send Test Notification
+                  Send Notification
                 </h2>
                 <p className="text-xs text-slate-500 mt-1">
                   To <span className="text-slate-300">{selectedUser.name}</span>{" "}
@@ -834,26 +833,21 @@ export default function NotificationsPage() {
             {sendResult && (
               <div
                 className={`mt-6 p-4 rounded-2xl border text-sm ${
-                  sendResult.delivered > 0
+                  sendResult.usersDelivered > 0
                     ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-400"
                     : "bg-amber-500/5 border-amber-500/20 text-amber-400"
                 }`}
               >
                 <p className="font-semibold">
-                  Delivered to {sendResult.delivered} of {sendResult.attempted}{" "}
-                  device{sendResult.attempted === 1 ? "" : "s"}
+                  Delivered to {sendResult.usersDelivered} of{" "}
+                  {sendResult.usersAttempted} user
+                  {sendResult.usersAttempted === 1 ? "" : "s"}
                 </p>
-                {sendResult.failures.length > 0 && (
-                  <ul className="mt-2 space-y-1 text-xs opacity-90">
-                    {sendResult.failures.map((failure, i) => (
-                      <li key={i}>
-                        <span className="font-bold uppercase">
-                          {failure.platform}
-                        </span>
-                        : {failure.error}
-                      </li>
-                    ))}
-                  </ul>
+                {sendResult.usersDelivered === 0 && (
+                  <p className="mt-1 text-xs opacity-90">
+                    No device accepted the notification. The user&apos;s
+                    registrations may be expired.
+                  </p>
                 )}
               </div>
             )}
@@ -873,7 +867,7 @@ export default function NotificationsPage() {
                 Close
               </button>
               <button
-                onClick={handleSendTest}
+                onClick={handleSendNotification}
                 disabled={sending}
                 className="px-8 py-3 bg-white text-black text-xs font-black rounded-2xl hover:bg-emerald-400 transition-all duration-300 disabled:opacity-30 flex items-center gap-2 active:scale-95 uppercase tracking-widest"
               >

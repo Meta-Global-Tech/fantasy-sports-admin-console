@@ -344,19 +344,6 @@ export interface PaginatedNotificationUsersResponse {
   hasMore: boolean;
 }
 
-export interface SendTestNotificationRequest {
-  userId: string;
-  title?: string;
-  body?: string;
-  data?: Record<string, string>;
-}
-
-export interface SendNotificationResult {
-  attempted: number;
-  delivered: number;
-  failures: { platform: NotificationPlatform; error: string }[];
-}
-
 export interface SendNotificationToUsersRequest {
   userIds: string[];
   title: string;

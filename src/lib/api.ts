@@ -37,8 +37,6 @@ import type {
   GetWalletTransactionsParams,
   GetNotificationUsersParams,
   PaginatedNotificationUsersResponse,
-  SendTestNotificationRequest,
-  SendNotificationResult,
   NotificationGlobalConfig,
   GetAdminUsersParams,
   PaginatedAdminUsersResponse,
@@ -292,15 +290,6 @@ export const adminApi = {
     const response = await api.get<PaginatedNotificationUsersResponse>(
       "/admin/notifications/users",
       { params },
-    );
-    return response.data;
-  },
-  async sendTestNotification(
-    data: SendTestNotificationRequest,
-  ): Promise<SendNotificationResult> {
-    const response = await api.post<SendNotificationResult>(
-      "/admin/notifications/test",
-      data,
     );
     return response.data;
   },
