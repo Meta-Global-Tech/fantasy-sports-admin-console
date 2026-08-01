@@ -43,6 +43,9 @@ import type {
   GetAdminUsersParams,
   PaginatedAdminUsersResponse,
   AdminUserDetails,
+  ContestDreamTeamDetails,
+  SendNotificationToUsersRequest,
+  BroadcastNotificationResult,
 } from "@/types";
 
 // ── Token store ─────────────────────────────────────────────────────────────
@@ -173,6 +176,17 @@ export const contestsApi = {
   async createContest(data: CreateContestRequest): Promise<void> {
     await api.post("/contests/create", data);
   },
+  async getDreamTeamDetails(
+    matchId: string,
+    contestId: string,
+    ownerId: string,
+    dreamTeamId: string,
+  ): Promise<ContestDreamTeamDetails> {
+    const response = await api.get<ContestDreamTeamDetails>(
+      `/contests/all/${matchId}/${contestId}/teams/${ownerId}/${dreamTeamId}`,
+    );
+    return response.data;
+  },
 };
 
 /**
@@ -286,6 +300,15 @@ export const adminApi = {
   ): Promise<SendNotificationResult> {
     const response = await api.post<SendNotificationResult>(
       "/admin/notifications/test",
+      data,
+    );
+    return response.data;
+  },
+  async sendNotificationToUsers(
+    data: SendNotificationToUsersRequest,
+  ): Promise<BroadcastNotificationResult> {
+    const response = await api.post<BroadcastNotificationResult>(
+      "/admin/notifications/send",
       data,
     );
     return response.data;

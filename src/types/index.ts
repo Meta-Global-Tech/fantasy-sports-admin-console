@@ -178,6 +178,19 @@ export interface ContestDreamTeam {
   rank?: number;
 }
 
+export interface ContestDreamTeamPlayer {
+  playerProfileId: string;
+  name: string;
+  realTeamId: string;
+  playerRole: PlayerRole;
+  playerSecondRole: PlayerSecondRole;
+  imageUrl?: string;
+}
+
+export interface ContestDreamTeamDetails extends ContestDreamTeam {
+  players: ContestDreamTeamPlayer[];
+}
+
 export interface Contest {
   id: string;
   contestId?: number;
@@ -342,6 +355,18 @@ export interface SendNotificationResult {
   attempted: number;
   delivered: number;
   failures: { platform: NotificationPlatform; error: string }[];
+}
+
+export interface SendNotificationToUsersRequest {
+  userIds: string[];
+  title: string;
+  body: string;
+  data?: Record<string, string>;
+}
+
+export interface BroadcastNotificationResult {
+  usersAttempted: number;
+  usersDelivered: number;
 }
 
 export interface ReminderOffsetToggles {

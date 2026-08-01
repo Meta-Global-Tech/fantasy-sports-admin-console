@@ -19,6 +19,8 @@ import type {
   PlayerSecondRole,
   PriceSheetItem,
   UpdateContestConfigurationRequest,
+  ContestDreamTeam,
+  ContestDreamTeamDetails,
 } from "@/types";
 import { MatchCard } from "@/components/MatchCard";
 import { CreateContestForm } from "@/components/CreateContestForm";
@@ -129,6 +131,17 @@ function ConfirmationModal({
 
 const APP_FRONTEND_URL =
   process.env.NEXT_PUBLIC_APP_URL ?? "https://app.procrick.com";
+
+// Default template for the "unsubmitted draft team" reminder notification
+const DRAFT_REMINDER_TITLE = "🏏 Don’t Leave Your Draft Team Unsubmitted!";
+const DRAFT_REMINDER_BODY = `Your team is ready, but you haven’t submitted it yet! Submit now and you can still edit your team anytime before the match starts.
+
+⚡ Submit early = Tie-breaker advantage!
+If teams finish with the same points, the team submitted first wins.
+
+👉 Submit your team now and secure your spot! 🏆`;
+const draftReminderDeeplink = (matchId: string, contestId: string) =>
+  `/match/${matchId}/contest/${contestId}/my-teams`;
 
 function toDateInputValue(d: Date) {
   return d.toISOString().slice(0, 10);
@@ -269,6 +282,24 @@ export default function MatchesPage() {
     variant: "blue",
     onConfirm: () => {},
   });
+
+  // Dream team detail expansion + draft reminder notification state
+  const [expandedTeamKey, setExpandedTeamKey] = useState<string | null>(null);
+  const [teamDetailsCache, setTeamDetailsCache] = useState<
+    Record<string, ContestDreamTeamDetails>
+  >({});
+  const [loadingTeamKey, setLoadingTeamKey] = useState<string | null>(null);
+  const [selectedDraftOwnerIds, setSelectedDraftOwnerIds] = useState<
+    Set<string>
+  >(new Set());
+  const [draftNotify, setDraftNotify] = useState<{
+    matchId: string;
+    contestId: string;
+    title: string;
+    body: string;
+    deeplink: string;
+  } | null>(null);
+  const [sendingDraftNotify, setSendingDraftNotify] = useState(false);
 
   const fetchMatches = useCallback(
     async (cursor?: number) => {
@@ -893,6 +924,107 @@ export default function MatchesPage() {
     });
   };
 
+  // Reset team expansion / draft selection when switching contests
+  useEffect(() => {
+    setExpandedTeamKey(null);
+    setSelectedDraftOwnerIds(new Set());
+  }, [selectedContestId]);
+
+  const handleToggleTeamDetails = async (
+    matchId: string,
+    contestId: string,
+    team: ContestDreamTeam,
+  ) => {
+    const key = `${contestId}-${team.ownerId}-${team.dreamTeamId}`;
+    if (expandedTeamKey === key) {
+      setExpandedTeamKey(null);
+      return;
+    }
+    setExpandedTeamKey(key);
+    if (!teamDetailsCache[key]) {
+      setLoadingTeamKey(key);
+      try {
+        const details = await contestsApi.getDreamTeamDetails(
+          matchId,
+          contestId,
+          team.ownerId,
+          team.dreamTeamId,
+        );
+        setTeamDetailsCache((prev) => ({ ...prev, [key]: details }));
+      } catch (err: any) {
+        console.error("Failed to fetch dream team details", err);
+        alert(
+          err.response?.data?.message || "Failed to load dream team details",
+        );
+        setExpandedTeamKey(null);
+      } finally {
+        setLoadingTeamKey(null);
+      }
+    }
+  };
+
+  const toggleDraftOwnerSelection = (ownerId: string) => {
+    setSelectedDraftOwnerIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(ownerId)) {
+        next.delete(ownerId);
+      } else {
+        next.add(ownerId);
+      }
+      return next;
+    });
+  };
+
+  const openDraftNotifyModal = (
+    matchId: string,
+    contestId: string,
+    draftOwnerIds: string[],
+  ) => {
+    // Default to every draft owner if nothing is selected yet
+    if (selectedDraftOwnerIds.size === 0) {
+      setSelectedDraftOwnerIds(new Set(draftOwnerIds));
+    }
+    setDraftNotify({
+      matchId,
+      contestId,
+      title: DRAFT_REMINDER_TITLE,
+      body: DRAFT_REMINDER_BODY,
+      deeplink: draftReminderDeeplink(matchId, contestId),
+    });
+  };
+
+  const handleSendDraftNotification = async () => {
+    if (!draftNotify) return;
+    const userIds = [...selectedDraftOwnerIds];
+    if (userIds.length === 0) {
+      alert("Select at least one user with a draft team");
+      return;
+    }
+    setSendingDraftNotify(true);
+    try {
+      const result = await adminApi.sendNotificationToUsers({
+        userIds,
+        title: draftNotify.title,
+        body: draftNotify.body,
+        data: {
+          screen: draftNotify.deeplink,
+          matchId: draftNotify.matchId,
+          contestId: draftNotify.contestId,
+          type: "DRAFT_TEAM_REMINDER",
+        },
+      });
+      alert(
+        `Notification delivered to ${result.usersDelivered} of ${result.usersAttempted} user(s)`,
+      );
+      setDraftNotify(null);
+    } catch (err: any) {
+      console.error("Failed to send draft reminder", err);
+      alert(err.response?.data?.message || "Failed to send notification");
+    } finally {
+      setSendingDraftNotify(false);
+    }
+  };
+
   // Fetch when dates change
   useEffect(() => {
     setNextCursor(undefined);
@@ -1301,6 +1433,13 @@ export default function MatchesPage() {
                             return (b.score ?? 0) - (a.score ?? 0);
                           })
                         : [];
+                      const draftOwnerIds = [
+                        ...new Set(
+                          allTeams
+                            .filter((t) => t.status === "DRAFT")
+                            .map((t) => t.ownerId),
+                        ),
+                      ];
                       const draftCount = allTeams.filter(
                         (t) => t.status === "DRAFT",
                       ).length;
@@ -1792,51 +1931,172 @@ export default function MatchesPage() {
                                   : `${leaderboard.length} entries`}
                               </span>
                             </h3>
+                            {draftCount > 0 && (
+                              <div className="flex items-center gap-2 mb-3">
+                                <button
+                                  onClick={() =>
+                                    openDraftNotifyModal(
+                                      contest.matchId,
+                                      contest.id,
+                                      draftOwnerIds,
+                                    )
+                                  }
+                                  className="flex-1 py-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs font-semibold border border-amber-500/20 transition-all"
+                                >
+                                  🔔 Send Draft Reminder
+                                  {selectedDraftOwnerIds.size > 0
+                                    ? ` (${selectedDraftOwnerIds.size} selected)`
+                                    : ` (all ${draftOwnerIds.length})`}
+                                </button>
+                                {selectedDraftOwnerIds.size > 0 && (
+                                  <button
+                                    onClick={() =>
+                                      setSelectedDraftOwnerIds(new Set())
+                                    }
+                                    className="px-3 py-2 rounded-lg text-[10px] font-bold text-slate-500 hover:text-white bg-white/5 border border-white/10 transition-all"
+                                  >
+                                    Clear
+                                  </button>
+                                )}
+                              </div>
+                            )}
                             {allTeams.length > 0 ? (
                               <div className="flex flex-col gap-2">
-                                {allTeams.map((team) => (
-                                  <div
-                                    key={`${team.ownerId}-${team.dreamTeamId}`}
-                                    className={`bg-black/20 border rounded-lg p-3 flex items-center gap-3 ${
-                                      team.status === "DRAFT"
-                                        ? "border-amber-500/20"
-                                        : "border-white/5"
-                                    }`}
-                                  >
-                                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-xs font-bold text-emerald-400 shrink-0">
-                                      {team.rank ? `#${team.rank}` : "—"}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                      <div className="flex items-center gap-2">
-                                        <p className="text-xs font-semibold text-white truncate">
-                                          {team.name}
-                                        </p>
-                                        <span
-                                          className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${DREAM_TEAM_STATUS_COLORS[team.status] ?? "bg-slate-500/20 text-slate-400"}`}
-                                        >
-                                          {team.status}
+                                {allTeams.map((team) => {
+                                  const teamKey = `${contest.id}-${team.ownerId}-${team.dreamTeamId}`;
+                                  const isExpanded =
+                                    expandedTeamKey === teamKey;
+                                  const details = teamDetailsCache[teamKey];
+                                  return (
+                                    <div
+                                      key={teamKey}
+                                      className={`bg-black/20 border rounded-lg ${
+                                        team.status === "DRAFT"
+                                          ? "border-amber-500/20"
+                                          : "border-white/5"
+                                      }`}
+                                    >
+                                      <div
+                                        onClick={() =>
+                                          handleToggleTeamDetails(
+                                            contest.matchId,
+                                            contest.id,
+                                            team,
+                                          )
+                                        }
+                                        className="p-3 flex items-center gap-3 cursor-pointer hover:bg-white/2 transition-all"
+                                      >
+                                        {team.status === "DRAFT" && (
+                                          <input
+                                            type="checkbox"
+                                            checked={selectedDraftOwnerIds.has(
+                                              team.ownerId,
+                                            )}
+                                            onChange={() =>
+                                              toggleDraftOwnerSelection(
+                                                team.ownerId,
+                                              )
+                                            }
+                                            onClick={(e) =>
+                                              e.stopPropagation()
+                                            }
+                                            className="accent-amber-500 shrink-0 cursor-pointer"
+                                            title="Select owner for draft reminder"
+                                          />
+                                        )}
+                                        <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-xs font-bold text-emerald-400 shrink-0">
+                                          {team.rank ? `#${team.rank}` : "—"}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                          <div className="flex items-center gap-2">
+                                            <p className="text-xs font-semibold text-white truncate">
+                                              {team.name}
+                                            </p>
+                                            <span
+                                              className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${DREAM_TEAM_STATUS_COLORS[team.status] ?? "bg-slate-500/20 text-slate-400"}`}
+                                            >
+                                              {team.status}
+                                            </span>
+                                          </div>
+                                          <p
+                                            className="text-[10px] text-slate-500 truncate"
+                                            title={team.ownerId}
+                                          >
+                                            {team.ownerName || team.ownerId}
+                                            {team.ownerEmail
+                                              ? ` · ${team.ownerEmail}`
+                                              : ""}
+                                          </p>
+                                        </div>
+                                        <div className="text-right">
+                                          <p className="text-xs font-bold text-white">
+                                            {team.score ?? "—"}
+                                          </p>
+                                          <p className="text-[9px] text-slate-500">
+                                            Pts
+                                          </p>
+                                        </div>
+                                        <span className="text-slate-600 text-[10px] shrink-0">
+                                          {isExpanded ? "▲" : "▼"}
                                         </span>
                                       </div>
-                                      <p
-                                        className="text-[10px] text-slate-500 truncate"
-                                        title={team.ownerId}
-                                      >
-                                        {team.ownerName || team.ownerId}
-                                        {team.ownerEmail
-                                          ? ` · ${team.ownerEmail}`
-                                          : ""}
-                                      </p>
+                                      {isExpanded && (
+                                        <div className="border-t border-white/5 p-3">
+                                          {loadingTeamKey === teamKey ? (
+                                            <div className="flex flex-col gap-2">
+                                              {[1, 2, 3].map((i) => (
+                                                <div
+                                                  key={i}
+                                                  className="h-8 rounded-lg bg-white/3 animate-pulse"
+                                                />
+                                              ))}
+                                            </div>
+                                          ) : details ? (
+                                            <div className="flex flex-col gap-1.5">
+                                              {details.players.map(
+                                                (player) => (
+                                                  <div
+                                                    key={
+                                                      player.playerProfileId
+                                                    }
+                                                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/3"
+                                                  >
+                                                    <span className="text-xs text-white flex-1 truncate">
+                                                      {player.name}
+                                                    </span>
+                                                    <span className="text-[9px] text-slate-500 uppercase">
+                                                      {
+                                                        player.playerSecondRole
+                                                      }
+                                                    </span>
+                                                    {player.playerRole ===
+                                                      "CAPTAIN" && (
+                                                      <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 shrink-0">
+                                                        C
+                                                      </span>
+                                                    )}
+                                                    {player.playerRole ===
+                                                      "VICECAPTAIN" && (
+                                                      <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-400 shrink-0">
+                                                        VC
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                ),
+                                              )}
+                                              {details.players.length ===
+                                                0 && (
+                                                <p className="text-[10px] text-slate-500 text-center py-2">
+                                                  No players picked yet
+                                                </p>
+                                              )}
+                                            </div>
+                                          ) : null}
+                                        </div>
+                                      )}
                                     </div>
-                                    <div className="text-right">
-                                      <p className="text-xs font-bold text-white">
-                                        {team.score ?? "—"}
-                                      </p>
-                                      <p className="text-[9px] text-slate-500">
-                                        Pts
-                                      </p>
-                                    </div>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             ) : leaderboard.length > 0 ? (
                               <div className="flex flex-col gap-2">
@@ -3531,6 +3791,94 @@ export default function MatchesPage() {
                   Failed to load contest details
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Draft Team Reminder Modal */}
+      {draftNotify && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-[#050508]/80 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => !sendingDraftNotify && setDraftNotify(null)}
+          />
+          <div className="relative w-full max-w-lg bg-[#0d0d14] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 p-6">
+            <h3 className="text-lg font-bold text-white mb-1">
+              Send Draft Team Reminder
+            </h3>
+            <p className="text-xs text-slate-400 mb-5">
+              Push notification to {selectedDraftOwnerIds.size} user
+              {selectedDraftOwnerIds.size === 1 ? "" : "s"} with unsubmitted
+              draft teams in this contest.
+            </p>
+
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] text-slate-500 uppercase font-bold">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  value={draftNotify.title}
+                  onChange={(e) =>
+                    setDraftNotify({ ...draftNotify, title: e.target.value })
+                  }
+                  className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500/50"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] text-slate-500 uppercase font-bold">
+                  Body
+                </label>
+                <textarea
+                  value={draftNotify.body}
+                  onChange={(e) =>
+                    setDraftNotify({ ...draftNotify, body: e.target.value })
+                  }
+                  rows={8}
+                  className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500/50 resize-y"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] text-slate-500 uppercase font-bold">
+                  Deeplink
+                </label>
+                <input
+                  type="text"
+                  value={draftNotify.deeplink}
+                  onChange={(e) =>
+                    setDraftNotify({
+                      ...draftNotify,
+                      deeplink: e.target.value,
+                    })
+                  }
+                  className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500/50"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setDraftNotify(null)}
+                disabled={sendingDraftNotify}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendDraftNotification}
+                disabled={
+                  sendingDraftNotify || selectedDraftOwnerIds.size === 0
+                }
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-amber-500/20 hover:bg-amber-600/30 text-amber-400 border border-amber-500/30 transition-all shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {sendingDraftNotify ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  "Send Notification"
+                )}
+              </button>
             </div>
           </div>
         </div>
