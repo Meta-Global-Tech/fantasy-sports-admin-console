@@ -8,7 +8,7 @@ export default function UsersLayout({
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 ml-56 bg-[#0a0a0f]">{children}</main>
+      <main className="flex-1 md:ml-56 pt-14 md:pt-0 bg-[#0a0a0f]">{children}</main>
     </div>
   );
 }

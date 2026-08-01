@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const NAV_ITEMS = [
   {
@@ -126,9 +127,59 @@ import { useAuth } from "@/components/AuthProvider";
 export function Sidebar() {
   const pathname = usePathname();
   const { logout, user } = useAuth();
+  const [open, setOpen] = useState(false);
+
+  // Close the drawer whenever the route changes
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   return (
-    <aside className="fixed inset-y-0 left-0 w-56 bg-[#0d0d14] border-r border-white/5 flex flex-col z-20">
+    <>
+      {/* Mobile top bar */}
+      <div className="md:hidden fixed top-0 inset-x-0 h-14 z-30 bg-[#0d0d14]/95 backdrop-blur border-b border-white/5 flex items-center gap-3 px-4">
+        <button
+          onClick={() => setOpen(true)}
+          aria-label="Open navigation menu"
+          className="p-2 -ml-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+            />
+          </svg>
+        </button>
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
+            <span className="text-[10px] font-bold text-black">PC</span>
+          </div>
+          <p className="text-sm font-semibold text-white leading-none">
+            ProCrick
+          </p>
+        </div>
+      </div>
+
+      {/* Mobile backdrop */}
+      {open && (
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 w-64 md:w-56 bg-[#0d0d14] border-r border-white/5 flex flex-col z-50 md:z-20 transform transition-transform duration-200 md:transition-none ${
+          open ? "translate-x-0" : "-translate-x-full"
+        } md:translate-x-0`}
+      >
       {/* Logo */}
       <div className="px-5 py-5 border-b border-white/5">
         <div className="flex items-center gap-2.5">
@@ -141,6 +192,13 @@ export function Sidebar() {
             </p>
             <p className="text-[10px] text-slate-500 mt-0.5">Admin Console</p>
           </div>
+          <button
+            onClick={() => setOpen(false)}
+            aria-label="Close navigation menu"
+            className="md:hidden ml-auto p-2 -mr-2 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-all"
+          >
+            ✕
+          </button>
         </div>
       </div>
 
@@ -210,6 +268,7 @@ export function Sidebar() {
       <div className="px-5 py-4 border-t border-white/5">
         <p className="text-[10px] text-slate-600 font-mono">v1.0.0</p>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

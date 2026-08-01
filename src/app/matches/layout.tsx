@@ -8,7 +8,7 @@ export default function MatchesLayout({
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 ml-56">{children}</main>
+      <main className="flex-1 md:ml-56 pt-14 md:pt-0">{children}</main>
     </div>
   );
 }

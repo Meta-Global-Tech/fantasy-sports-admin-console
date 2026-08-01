@@ -43,7 +43,7 @@ export function DateRangePicker({ from, to, onChange }: DateRangePickerProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       {/* Quick ranges */}
-      <div className="flex gap-1">
+      <div className="flex flex-wrap gap-1">
         {QUICK_RANGES.map((r) => (
           <button
             key={r.label}

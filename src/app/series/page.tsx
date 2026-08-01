@@ -25,7 +25,7 @@ export default function SeriesListPage() {
   }, []);
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-8 max-w-5xl mx-auto">
       <header className="mb-8">
         <h1 className="text-2xl font-bold text-white mb-2">Series Leaderboards</h1>
         <p className="text-slate-400">Select a series to view its leaderboard and manage recalculations.</p>

@@ -336,9 +336,9 @@ export default function UsersPage() {
   const preferences = details?.notificationPreferences;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto min-h-full">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto min-h-full">
       {/* Header */}
-      <div className="relative mb-10 p-8 rounded-3xl bg-gradient-to-br from-emerald-500/10 via-cyan-500/5 to-transparent border border-white/5 overflow-hidden">
+      <div className="relative mb-10 p-5 sm:p-8 rounded-3xl bg-gradient-to-br from-emerald-500/10 via-cyan-500/5 to-transparent border border-white/5 overflow-hidden">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px]" />
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-4">
@@ -395,7 +395,7 @@ export default function UsersPage() {
             <button
               type="submit"
               disabled={loading}
-              className="px-8 py-3 bg-white text-black font-bold rounded-2xl hover:bg-emerald-400 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2 transform active:scale-95"
+              className="px-5 sm:px-8 py-3 bg-white text-black font-bold rounded-2xl hover:bg-emerald-400 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2 transform active:scale-95"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
@@ -540,7 +540,7 @@ export default function UsersPage() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Panel header */}
-            <div className="sticky top-0 z-10 px-8 py-6 bg-[#0d0d14]/95 backdrop-blur border-b border-white/5 flex items-start justify-between">
+            <div className="sticky top-0 z-10 px-4 py-4 sm:px-8 sm:py-6 bg-[#0d0d14]/95 backdrop-blur border-b border-white/5 flex items-start justify-between">
               <div>
                 <h2 className="text-xl font-bold text-white tracking-tight">
                   {detailUser.name}
@@ -576,7 +576,7 @@ export default function UsersPage() {
               </button>
             </div>
 
-            <div className="p-8 space-y-6">
+            <div className="p-4 sm:p-8 space-y-6">
               {detailLoading ? (
                 <div className="py-24 text-center">
                   <div className="w-8 h-8 mx-auto border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
@@ -592,7 +592,7 @@ export default function UsersPage() {
                 <>
                   {/* Profile */}
                   <Section title="Profile">
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
                       <Field label="Name" value={details.name} />
                       <Field label="Email" value={details.email} />
                       <Field label="Role" value={details.role} />

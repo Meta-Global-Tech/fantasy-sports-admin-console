@@ -107,20 +107,20 @@ export default function PlayersPage() {
   const displayedPlayers = players;
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white">Player Profiles</h1>
           <p className="text-slate-500 text-sm mt-1">{players.length} players loaded</p>
         </div>
-        
+
         <div className="relative">
           <input
             type="text"
             placeholder="Search players..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-64 bg-[#0d0d14] border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-all"
+            className="w-full sm:w-64 bg-[#0d0d14] border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-all"
           />
         </div>
       </div>
@@ -132,6 +132,7 @@ export default function PlayersPage() {
       )}
 
       <div className="bg-[#0d0d14] border border-white/5 rounded-2xl overflow-hidden shadow-xl">
+        <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead className="bg-white/5 border-b border-white/5">
             <tr>
@@ -228,6 +229,7 @@ export default function PlayersPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {hasMore && (

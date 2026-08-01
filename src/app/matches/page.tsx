@@ -1068,10 +1068,10 @@ export default function MatchesPage() {
     <div className="min-h-screen relative flex">
       {/* Main Content */}
       <div
-        className={`flex-1 transition-all duration-300 ${selectedMatchId ? "mr-[400px]" : ""}`}
+        className={`flex-1 transition-all duration-300 ${selectedMatchId ? "lg:mr-[400px]" : ""}`}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-[#0a0a0f]/80 backdrop-blur border-b border-white/5 px-6 py-4">
+        <div className="sticky top-14 md:top-0 z-10 bg-[#0a0a0f]/80 backdrop-blur border-b border-white/5 px-4 sm:px-6 py-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-lg font-semibold text-white">Matches</h1>
@@ -1147,7 +1147,7 @@ export default function MatchesPage() {
         </div>
 
         {/* Content */}
-        <div className="px-6 py-5">
+        <div className="px-4 sm:px-6 py-5">
           {/* Error */}
           {error && (
             <div className="mb-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
@@ -1222,10 +1222,10 @@ export default function MatchesPage() {
 
       {/* Side Panel */}
       {selectedMatchId && (
-        <div className="fixed right-0 top-0 bottom-0 w-[400px] bg-[#0d0d14] border-l border-white/10 z-20 flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+        <div className="fixed right-0 top-14 md:top-0 bottom-0 w-full sm:w-[400px] bg-[#0d0d14] border-l border-white/10 z-20 flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
           <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="p-6 border-b border-white/5 flex items-center justify-between">
+            <div className="p-4 sm:p-6 border-b border-white/5 flex items-center justify-between">
               <div>
                 {selectedContestId ? (
                   <div className="flex items-center gap-2">
@@ -1393,7 +1393,7 @@ export default function MatchesPage() {
             </div>
 
             {/* List */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               {loadingDetails ? (
                 <div className="flex flex-col gap-4">
                   {[1, 2, 3].map((i) => (

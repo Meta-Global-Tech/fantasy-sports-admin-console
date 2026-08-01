@@ -106,7 +106,7 @@ function WalletsContent() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto min-h-full">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto min-h-full">
       {/* Header section with gradient background */}
       <div className="relative mb-10 p-8 rounded-3xl bg-gradient-to-br from-emerald-500/10 via-cyan-500/5 to-transparent border border-white/5 overflow-hidden">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px]" />

@@ -70,7 +70,7 @@ function SeriesLeaderboardContent() {
   }
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-8 max-w-6xl mx-auto">
       <nav className="mb-6">
         <Link
           href="/series"

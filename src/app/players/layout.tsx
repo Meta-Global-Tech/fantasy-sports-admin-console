@@ -8,7 +8,7 @@ export default function PlayersLayout({
   return (
     <div className="flex min-h-screen text-slate-100">
       <Sidebar />
-      <main className="flex-1 ml-56">{children}</main>
+      <main className="flex-1 md:ml-56 pt-14 md:pt-0">{children}</main>
     </div>
   );
 }
