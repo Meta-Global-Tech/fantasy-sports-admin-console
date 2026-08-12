@@ -601,3 +601,37 @@ export interface GetWalletTransactionsParams {
   cursor?: string | number;
 }
 
+
+// ── Display Banners ───────────────────────────────────────────────────────────
+
+export interface DisplayBanner {
+  id: string;
+  title: string;
+  content: string;
+  imageUrl?: string;
+  /** In-app route (e.g. /matches/123) or external URL */
+  deeplink?: string;
+  urlExternal?: boolean;
+  buttonLabel?: string;
+  active: boolean;
+  /** Epoch ms — start of display window */
+  startsAt?: number;
+  /** Epoch ms — end of display window */
+  endsAt?: number;
+  priority?: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface CreateDisplayBannerRequest {
+  title: string;
+  content: string;
+  imageUrl?: string;
+  deeplink?: string;
+  urlExternal?: boolean;
+  buttonLabel?: string;
+  active: boolean;
+  startsAt?: number;
+  endsAt?: number;
+  priority?: number;
+}

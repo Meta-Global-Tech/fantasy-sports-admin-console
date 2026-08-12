@@ -44,6 +44,8 @@ import type {
   ContestDreamTeamDetails,
   SendNotificationToUsersRequest,
   BroadcastNotificationResult,
+  DisplayBanner,
+  CreateDisplayBannerRequest,
 } from "@/types";
 
 // ── Token store ─────────────────────────────────────────────────────────────
@@ -329,6 +331,57 @@ export const adminApi = {
   async getUserDetails(userId: string): Promise<AdminUserDetails> {
     const response = await api.get<AdminUserDetails>(`/admin/users/${userId}`);
     return response.data;
+  },
+};
+
+/**
+ * Keep only the known request fields. The backend rejects excess properties
+ * (tsoa throw-on-extras), so server fields like `id`/`createdAt`/`updatedAt`
+ * must never be echoed back. Optional fields are omitted entirely when unset
+ * or empty rather than sent as `undefined`/`""`.
+ */
+const sanitizeDisplayBannerRequest = (
+  data: CreateDisplayBannerRequest,
+): CreateDisplayBannerRequest => {
+  const body: CreateDisplayBannerRequest = {
+    title: data.title,
+    content: data.content,
+    active: data.active,
+  };
+  if (data.imageUrl) body.imageUrl = data.imageUrl;
+  if (data.deeplink) body.deeplink = data.deeplink;
+  if (data.urlExternal !== undefined) body.urlExternal = data.urlExternal;
+  if (data.buttonLabel) body.buttonLabel = data.buttonLabel;
+  if (data.startsAt !== undefined) body.startsAt = data.startsAt;
+  if (data.endsAt !== undefined) body.endsAt = data.endsAt;
+  if (data.priority !== undefined) body.priority = data.priority;
+  return body;
+};
+
+export const displayBannersApi = {
+  async list(): Promise<DisplayBanner[]> {
+    const response = await api.get<DisplayBanner[]>("/admin/display-banners");
+    return response.data;
+  },
+  async create(data: CreateDisplayBannerRequest): Promise<DisplayBanner> {
+    const response = await api.post<DisplayBanner>(
+      "/admin/display-banners",
+      sanitizeDisplayBannerRequest(data),
+    );
+    return response.data;
+  },
+  async update(
+    id: string,
+    data: CreateDisplayBannerRequest,
+  ): Promise<DisplayBanner> {
+    const response = await api.put<DisplayBanner>(
+      `/admin/display-banners/${id}`,
+      sanitizeDisplayBannerRequest(data),
+    );
+    return response.data;
+  },
+  async remove(id: string): Promise<void> {
+    await api.delete(`/admin/display-banners/${id}`);
   },
 };
 
