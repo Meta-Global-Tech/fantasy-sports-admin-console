@@ -635,3 +635,49 @@ export interface CreateDisplayBannerRequest {
   endsAt?: number;
   priority?: number;
 }
+
+
+// ── Series Management ─────────────────────────────────────────────────────────
+
+export type SeriesImportStatus = "queued" | "running" | "completed" | "failed";
+
+export interface SeriesImportStats {
+  /** Matches found in the ESPN schedule */
+  totalMatches: number;
+  matchesCreated: number;
+  /** Already existing / ended / locked matches */
+  matchesSkipped: number;
+  /** Matches that errored or had incomplete squad data */
+  matchesFailed: number;
+}
+
+export interface AdminSeries {
+  seriesName: string;
+  /** ESPN match-schedule-fixtures-and-results URL */
+  scheduleUrl: string;
+  /** Included in the hourly import fan-out when true */
+  enabled: boolean;
+  importStatus?: SeriesImportStatus;
+  importQueuedAt?: number;
+  importStartedAt?: number;
+  importCompletedAt?: number;
+  importError?: string;
+  importStats?: SeriesImportStats;
+  createdAt?: number;
+  updatedAt?: number;
+}
+
+export interface CreateSeriesRequest {
+  seriesName: string;
+  scheduleUrl: string;
+  enabled: boolean;
+}
+
+export interface UpdateSeriesRequest {
+  /** Current name (key) of the series to update */
+  seriesName: string;
+  /** Rename the series */
+  newSeriesName?: string;
+  scheduleUrl?: string;
+  enabled?: boolean;
+}

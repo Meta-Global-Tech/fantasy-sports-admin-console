@@ -46,6 +46,9 @@ import type {
   BroadcastNotificationResult,
   DisplayBanner,
   CreateDisplayBannerRequest,
+  AdminSeries,
+  CreateSeriesRequest,
+  UpdateSeriesRequest,
 } from "@/types";
 
 // ── Token store ─────────────────────────────────────────────────────────────
@@ -404,6 +407,45 @@ export const seriesApi = {
     data: RecalculateSeriesLeaderboardRequest,
   ): Promise<void> {
     await api.post("/admin/series/recalculate-leaderboard", data);
+  },
+};
+
+/**
+ * Series names contain "/" (e.g. "... T20 2025/26"), so these endpoints
+ * identify the series via body/query instead of a path segment. Requests are
+ * sanitized because the backend rejects excess properties (tsoa
+ * throw-on-extras).
+ */
+export const seriesAdminApi = {
+  async list(): Promise<AdminSeries[]> {
+    const response = await api.get<AdminSeries[]>("/admin/series");
+    return response.data;
+  },
+  async create(data: CreateSeriesRequest): Promise<AdminSeries> {
+    const body: CreateSeriesRequest = {
+      seriesName: data.seriesName,
+      scheduleUrl: data.scheduleUrl,
+      enabled: data.enabled,
+    };
+    const response = await api.post<AdminSeries>("/admin/series", body);
+    return response.data;
+  },
+  async update(data: UpdateSeriesRequest): Promise<AdminSeries> {
+    const body: UpdateSeriesRequest = { seriesName: data.seriesName };
+    if (data.newSeriesName) body.newSeriesName = data.newSeriesName;
+    if (data.scheduleUrl !== undefined) body.scheduleUrl = data.scheduleUrl;
+    if (data.enabled !== undefined) body.enabled = data.enabled;
+    const response = await api.put<AdminSeries>("/admin/series", body);
+    return response.data;
+  },
+  async remove(seriesName: string): Promise<void> {
+    await api.delete("/admin/series", { params: { seriesName } });
+  },
+  async triggerImport(seriesName: string, force = false): Promise<AdminSeries> {
+    const body: { seriesName: string; force?: boolean } = { seriesName };
+    if (force) body.force = true;
+    const response = await api.post<AdminSeries>("/admin/series/import", body);
+    return response.data;
   },
 };
 
